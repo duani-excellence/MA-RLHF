@@ -1,0 +1,178 @@
+import torch
+from datasets import load_dataset, load_from_disk
+from trl import AutoModelForCausalLMWithValueHead, PPOTrainer, PPOConfig
+from trl.core import LengthSampler
+from transformers import AutoTokenizer, BitsAndBytesConfig, HfArgumentParser
+from accelerate import Accelerator
+from utils import (
+    create_model_tokenizer,
+    create_peft,
+    is_main_process,
+    ScriptArguments,
+    DEFINE_EOS_TOKEN,
+)
+
+parser = HfArgumentParser(ScriptArguments)
+train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
+
+dataset_name = train_args.dataset_name
+model_name = train_args.model_name
+rm_model_name = train_args.reward_model_name
+deepspeed_config_name = train_args.deepspeed_config_name
+seq_length = train_args.seq_length
+batch_size = train_args.batch_size
+mini_batch_size = train_args.mini_batch_size
+ppo_epochs = train_args.ppo_epochs
+output_max_length = train_args.output_max_length
+output_name = train_args.output_name
+is_peft = train_args.use_QLora
+is_use_flash_attention2 = train_args.use_flash_attention_2
+
+
+def create_model_tokenizer(name, rm_model_name, peft_config):
+    # QLoRA
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+    )
+
+    device_map = {"": Accelerator().local_process_index}
+    print('device map: ', device_map)
+
+    model = AutoModelForCausalLMWithValueHead.from_pretrained(
+        name,
+        quantization_config=bnb_config,
+        peft_config=peft_config,
+        reward_adapter=rm_model_name,
+        device_map=device_map,
+        use_flash_attention_2=True,
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name, use_fast=True, model_max_length=seq_length
+    )
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.eos_token = DEFINE_EOS_TOKEN
+    # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
+    model.config.pad_token_id = model.config.eos_token_id
+
+    return model, tokenizer
+
+
+def create_dataset(dataset_name, tokenizer):
+    datasets = load_from_disk(dataset_name)['train']
+    # datasets = load_dataset(dataset_name, 'reward', split='train')
+
+    # template: ### Question: {question}\n ### Answer: {response_j}{tokenizer.eos_token}
+    def preprocess_function(examples):
+        new_examples = {
+            "query": [],
+            "input_ids": [],
+        }
+        for question in examples["question"]:
+            query = f"### Question: {question}\n ### Answer: "
+            tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
+            new_examples["query"].append(query)
+            new_examples["input_ids"].append(tokenized_question["input_ids"][0])
+        return new_examples
+
+    datasets = datasets.map(
+        preprocess_function,
+        batched=True,
+        num_proc=8,
+    )
+    datasets = datasets.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
+    datasets.set_format(type="torch")
+    return datasets
+
+
+def collator(examples):
+    batch = {'query': [], 'input_ids': []}
+    for example in examples:
+        batch['query'].append(example['query'])
+        batch['input_ids'].append(torch.tensor(example['input_ids'], dtype=torch.long))
+    return batch
+
+
+def train():
+    peft_config = create_peft(is_peft)
+    model, tokenizer = create_model_tokenizer(
+        model_name, rm_model_name, peft_config
+    )  # model is sequence classification
+    dataset = create_dataset(dataset_name, tokenizer)
+
+    # generation config
+    generation_kwargs = {
+        "top_k": 200,
+        "top_p": 0.90,
+        "temperature": 1.2,
+        "do_sample": True,
+        "pad_token_id": tokenizer.pad_token_id,
+        "eos_token_id": tokenizer.eos_token_id,
+    }
+    output_length_sampler = LengthSampler(32, output_max_length)
+
+    config = PPOConfig(
+        log_with='wandb',
+        learning_rate=2e-5,
+        batch_size=batch_size,
+        mini_batch_size=mini_batch_size,
+        gradient_accumulation_steps=1,
+        optimize_cuda_cache=True,
+        early_stopping=True,
+        target_kl=0.1,
+        ppo_epochs=ppo_epochs,
+        seed=0,
+        init_kl_coef=0.2,
+        adap_kl_ctrl=True,
+        max_grad_norm=1.0,  # fix generate nan
+        deepspeed=deepspeed_config_name,
+    )
+
+    trainer = PPOTrainer(
+        config,
+        model,
+        ref_model=None,  # share parameters
+        tokenizer=tokenizer,
+        dataset=dataset,
+        data_collator=collator,
+    )
+
+    reward_baseline = 0.0
+    save_freq = 100
+
+    # for epoch, batch in enumerate(trainer.dataloader):
+    for epoch, batch in enumerate(trainer.dataloader):
+        if epoch >= config.total_ppo_epochs:
+            break
+        question_tensors = batch["input_ids"]
+        response_tensors = trainer.generate(
+            question_tensors,
+            return_prompt=False,
+            length_sampler=output_length_sampler,
+            **generation_kwargs,
+        )
+        batch["response"] = tokenizer.batch_decode(response_tensors, skip_special_tokens=True)
+
+        texts = [q + r for q, r in zip(batch["query"], batch["response"])]
+        # calculate Rewards with MARL
+        # https://huggingface.co/docs/trl/multi_adapter_rl
+        # trl/examples/scripts/ppo_multi_adapter.py
+        inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt").to(
+            trainer.accelerator.device
+        )
+        raw_rewards = trainer.accelerator.unwrap_model(trainer.model).compute_reward_score(**inputs)
+        rewards = [raw_rewards[i, -1, 0] for i in range(len(raw_rewards))]  # take last token
+
+        ## PPO Step
+        stats = trainer.step(question_tensors, response_tensors, rewards)
+
+        if is_main_process():
+            print(texts[0])
+            print(f"step:{epoch}, loss:{stats['ppo/loss/total']}")
+
+        if save_freq and epoch and epoch % save_freq == 0:
+            trainer.save_pretrained(output_path)
+
+
+if __name__ == "__main__":
+    train()
