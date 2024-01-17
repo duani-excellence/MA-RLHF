@@ -2,7 +2,7 @@
 
 MA-RLHF(Multiple Adapter-RLHF)  Project
 
-- Deepspeed + TRL + QLoRA 
+- Deepspeed + TRL + QLoRA
 - LLaMA2-7B -> RLHF   In  Colab
 
 
@@ -11,8 +11,8 @@ MA-RLHF(Multiple Adapter-RLHF)  Project
 
 - `Pretrained`: IMDB
 - `SFT`: Alpaca
-- `Reward Model`: Anthropic-HH
-- `RLHF `: Reward Model
+- `Reward Model`: Anthropic-HHRLHF
+- `PPO`: Anthropic-HHRLHF
 
 
 
@@ -46,10 +46,8 @@ deepspeed ./test/test_QLoRA.py
 
 Environment 8x3090
 
-|      |      |      |
-| ---- | ---- | ---- |
-|      |      |      |
-|      |      |      |
-|      |      |      |
-
-
+|     |     |     |
+| --- | --- | --- |
+|     |     |     |
+|     |     |     |
+|     |     |     |

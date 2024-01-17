@@ -10,6 +10,7 @@ sentencepiece
 scipy
 trl
 deepspeed
-flash_attn
 evaluate
 scikit-learn
+wandb
+flash-attn

@@ -1,3 +1,4 @@
+import re
 import torch
 from datasets import load_dataset, load_from_disk
 from trl import AutoModelForCausalLMWithValueHead, PPOTrainer, PPOConfig
@@ -45,10 +46,12 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
         reward_adapter=rm_model_name,
         device_map=device_map,
         use_flash_attention_2=True,
+        trust_remote_code=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name, use_fast=True, model_max_length=seq_length
+        model_name, use_fast=True, model_max_length=seq_length,
+        trust_remote_code=True,
     )
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
@@ -59,27 +62,48 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
 
 
 def create_dataset(dataset_name, tokenizer):
-    datasets = load_from_disk(dataset_name)['train']
-    # datasets = load_dataset(dataset_name, 'reward', split='train')
 
-    # template: ### Question: {question}\n ### Answer: {response_j}{tokenizer.eos_token}
+    datasets = load_dataset(dataset_name, split='train')
+
+    # template: ###Question: {question}\n ###Answer: {response_j}{tokenizer.eos_token}
     def preprocess_function(examples):
         new_examples = {
             "query": [],
             "input_ids": [],
         }
         for question in examples["question"]:
-            query = f"### Question: {question}\n ### Answer: "
+            query = f"###Question:{question}\n###Answer: "
             tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
             new_examples["query"].append(query)
             new_examples["input_ids"].append(tokenized_question["input_ids"][0])
         return new_examples
 
+    def preprocess_function_hhrlhf(examples):
+        new_examples = {
+            "query": [],
+            "input_ids": [],
+        }
+        for prompt_chosen in examples["chosen"]:
+
+            # format hh-rlhf dataset for PPO
+            prompt_chosen = prompt_chosen.rsplit('Assistant:',1)[0]
+            prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
+            prompt_chosen = re.sub(r'Assistant:', '\n###Answer:', prompt_chosen)
+            query = prompt_chosen + '\n###Answer:'
+
+            # TODO:truncation Answer Process
+            tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
+            new_examples["query"].append(query)
+            new_examples["input_ids"].append(tokenized_question["input_ids"][0])
+        return new_examples
+
+
     datasets = datasets.map(
-        preprocess_function,
+        preprocess_function_hhrlhf,
         batched=True,
         num_proc=8,
     )
+
     datasets = datasets.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
     datasets.set_format(type="torch")
     return datasets
@@ -92,12 +116,24 @@ def collator(examples):
         batch['input_ids'].append(torch.tensor(example['input_ids'], dtype=torch.long))
     return batch
 
+# def collator(data):
+#     return dict((key, [d[key] for d in data]) for key in data[0])
+
+
+# def collator(examples):
+#     batch = {'query': [], 'input_ids': []}
+#     for example in examples:
+#         batch['query'].append(example['query'])
+#         batch['input_ids'].append(torch.tensor(example['input_ids'], dtype=torch.long))
+#     return batch
+
 
 def train():
     peft_config = create_peft(is_peft)
     model, tokenizer = create_model_tokenizer(
         model_name, rm_model_name, peft_config
     )  # model is sequence classification
+
     dataset = create_dataset(dataset_name, tokenizer)
 
     # generation config
@@ -125,7 +161,6 @@ def train():
         init_kl_coef=0.2,
         adap_kl_ctrl=True,
         max_grad_norm=1.0,  # fix generate nan
-        deepspeed=deepspeed_config_name,
     )
 
     trainer = PPOTrainer(

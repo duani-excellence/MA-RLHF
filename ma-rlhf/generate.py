@@ -18,7 +18,7 @@ model = AutoModelForCausalLM.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # instruction = '我心情不好，有点头痛该怎么办？'
-# input = f'### Question: {instruction}\n ### Answer: '
+# input = f'###Question: {instruction}\n ###Answer: '
 input = format_prompt(instruction)
 
 inputs = tokenizer(input, return_tensors='pt').to(device)
@@ -30,8 +30,8 @@ print(output)
 
 '''
 
-### Question: 我心情不好，有点头痛该怎么办？
- ### Answer:
+###Question: 我心情不好，有点头痛该怎么办？
+ ###Answer:
 心情不好的时候，有头痛、头晕、头痛、头痛和头痛，这些症状都是正常的，我们需要继续努力抗拒抑郁和躁动，努力克服痛苦。
 心情不好的时候，可以采取以下方法：
 1. 尽量抑制自己的情绪，不要过度感受自己的情绪，不要过度感受自己的情绪，不要过度感受自己的情绪，不要过度感受自己的情绪，不要过度感受自己的情绪，不要过度感受自己的情绪，不要过度感受自己的情绪。

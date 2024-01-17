@@ -2,7 +2,7 @@ import torch
 from datasets import load_dataset, load_from_disk
 from trl import SFTTrainer
 from accelerate import Accelerator
-from peft import LoraConfig
+from peft import LoraConfig, get_peft_model
 from utils import ScriptArguments
 from transformers import (
     AutoModelForCausalLM,
@@ -26,8 +26,8 @@ deepspeed_config_name = train_args.deepspeed_config_name
 
 
 def create_datasets(dataset_name, tokenizer):
-    dataset = load_from_disk(dataset_name)
-    print(len(dataset['text']))
+    dataset = load_dataset(dataset_name,  split="train")
+    # print(len(dataset['text']))
     return dataset, None
 
 
@@ -45,7 +45,7 @@ def create_model_tokenizer(name):
         quantization_config=bnb_config,
         device_map=device_map,
         # torch_dtype=torch.bfloat16,
-        # use_flash_attention_2=True # gpt 2 not support flash attention2
+        use_flash_attention_2=True # gpt 2 not support flash attention2
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
@@ -72,6 +72,7 @@ def formatting_func(example):
 
 
 def train():
+
     model, tokenizer = create_model_tokenizer(model_name)
     torch.distributed.barrier()
 
@@ -81,21 +82,23 @@ def train():
 
     # peft
     peft_config = create_peft(is_peft)
-    # model = get_peft_model(model, peft_config)
 
     training_args = TrainingArguments(
         output_dir=output_name,
+        push_to_hub=False,
+        # save_strategy='epoch',
         logging_steps=1,
-        num_train_epochs=2,
+        num_train_epochs=1,
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=5e-5,
-        warmup_ratio=0.2,
+        warmup_ratio=0.1,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
+        max_steps=10,
     )
 
     trainer = SFTTrainer(
@@ -108,12 +111,11 @@ def train():
         packing=True,
         tokenizer=tokenizer,
         formatting_func=formatting_func,
+
     )
-    trainer.model.print_trainable_parameters()
+
     trainer.train()
     trainer.save_model(output_name)
 
-
 if __name__ == "__main__":
-    # with torch.autocast("cuda"):
     train()

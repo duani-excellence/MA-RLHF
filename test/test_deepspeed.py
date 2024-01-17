@@ -8,7 +8,7 @@ dataset = load_dataset("imdb", split="train")
 
 training_args = TrainingArguments(
     output_dir='./output/output_test_deepspeed',
-    deepspeed='./../config/ds.json',
+    deepspeed='./config/ds.json',
 )
 
 # get trainer

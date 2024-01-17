@@ -177,21 +177,27 @@ class ScriptArguments:
         default=True, metadata={"help": "gpt2 no flash attention2"}
     )
 
-
 def format_prompt_answer(question, answer):
-    return f"### Question: {question}\n ### Answer: {answer}{DEFINE_EOS_TOKEN}"
+    '''for generation'''
+    return f"###Question:{question}\n###Answer:{answer}{DEFINE_EOS_TOKEN}"
 
 
 def format_prompt(question):
-    return f"### Question: {question}\n ### Answer: "
+    return f"###Question:{question}\n###Answer: "
 
 
 # medical finetune data haven't 'input', only has 'instruction'
 def formatting_finetune_func(example):
-    text = f"### Question: {example['instruction']}\n ### Answer: {example['output']}{DEFINE_EOS_TOKEN}"
+    text = f"###Question: {example['instruction']}\n###Answer:{example['output']}{DEFINE_EOS_TOKEN}"
     return text
 
 
 def formatting_reward_func(example):
-    text = f"### Question: {example['question']}\n ### Answer: {example['response_rejected']}{DEFINE_EOS_TOKEN}"
+    text = f"###Question:{example['question']}\n###Answer:{example['response_rejected']}{DEFINE_EOS_TOKEN}"
     return text
+
+
+def formatting_alpaca_func(example):
+    return f"###Question:{example['instruction']} {example['input']}\n###Answer:{example['output']}{DEFINE_EOS_TOKEN}"
+    # # example['text']=
+    # return example
