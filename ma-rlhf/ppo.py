@@ -13,6 +13,8 @@ from utils import (
     DEFINE_EOS_TOKEN,
 )
 
+# class MyPPOTrainer(PPOTrainer):
+
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
 
@@ -102,6 +104,7 @@ def create_dataset(dataset_name, tokenizer):
         preprocess_function_hhrlhf,
         batched=True,
         num_proc=8,
+        remove_columns=datasets.column_names,
     )
 
     datasets = datasets.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
@@ -135,6 +138,7 @@ def train():
     )  # model is sequence classification
 
     dataset = create_dataset(dataset_name, tokenizer)
+    print(dataset)
 
     # generation config
     generation_kwargs = {

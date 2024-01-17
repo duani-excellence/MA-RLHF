@@ -96,6 +96,7 @@ deepspeed ./ma-rlhf/ppo.py \
 	--mini_batch_size=2 \
 	--ppo_epochs=1 \
 	--output_max_length=128 \
+	--seq_length=512
 
 
 # # merge PPO
