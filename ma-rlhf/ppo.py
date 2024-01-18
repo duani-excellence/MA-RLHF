@@ -30,6 +30,7 @@ output_max_length = train_args.output_max_length
 output_name = train_args.output_name
 is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
+# num_train_epochs = train_args.num_train_epochs
 
 
 def create_model_tokenizer(name, rm_model_name, peft_config):
@@ -94,7 +95,7 @@ def create_dataset(dataset_name, tokenizer):
             query = prompt_chosen + '\n###Answer:'
 
             # TODO:truncation Answer Process
-            tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
+            tokenized_question = tokenizer(query, return_tensors='pt')
             new_examples["query"].append(query)
             new_examples["input_ids"].append(tokenized_question["input_ids"][0])
         return new_examples

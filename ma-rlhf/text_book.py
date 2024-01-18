@@ -8,7 +8,6 @@ texts = []
 chunk_size = 512
 chunk_mode = True
 
-
 def split_string(text, chunk_size):
     chunks = [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
     return chunks

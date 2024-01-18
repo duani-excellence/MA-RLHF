@@ -47,11 +47,11 @@ model = AutoModelForCausalLM.from_pretrained(
 # print("暂停结束")
 
 training_args = TrainingArguments(
-    output_dir='./../output/test_QLoRA',
+    output_dir='./output/test_QLoRA',
     gradient_checkpointing=False,
     bf16=True,
     per_device_train_batch_size=4,
-    deepspeed='./../config/ds.json',
+    deepspeed='./config/ds.json',
 )
 
 

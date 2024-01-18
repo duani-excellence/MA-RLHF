@@ -157,6 +157,8 @@ class ScriptArguments:
 
     ppo_epochs: Optional[int] = field(default=1, metadata={"help": "the number of ppo epochs"})
 
+    num_train_epochs:  Optional[int] = field(default=1, metadata={"help": "train epochs "})
+
     gradient_accumulation_steps: Optional[int] = field(
         default=1, metadata={"help": "gradient accumulation steps"}
     )

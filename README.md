@@ -20,7 +20,7 @@ MA-RLHF(Multiple Adapter-RLHF)  Project
 
 CUDA required
 
-```
+```bash
 conda create -n llm python=3.10
 conda activate llm
 pip install -r requirements.txt
@@ -28,18 +28,40 @@ pip install -r requirements.txt
 
 DeepSpeed Test
 
-```
+```bash
 deepspeed ./test/test_QLoRA.py
 ```
 
+Setting Environment
 
+```bash
+
+export WANDB_API_KEY={YOU_WANDB_TOKEN} # from https://wandb.ai/authorize
+# export HF_ENDPOINT=https://hf-mirror.com
+# export NCCL_P2P_DISABLE="1" # for 3090/4090
+# export NCCL_IB_DISABLE="1"  # for 3090/4090
+
+```
 
 ## Quick Start
 
-```
-./scripts/run_all.sh
+```bash
+./scripts/run_step.sh
 ```
 
+### 1. Pretrained(Optional)
+
+### 2. SFT
+
+### 3. Reward Model
+
+### 4. PPO
+
+### 5. Merge Adapter
+
+### 6. Generate Test
+
+### 7. Custom Data
 
 
 ## Result

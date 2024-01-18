@@ -33,6 +33,7 @@ output_name = train_args.output_name
 is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
 dataset_sub_name = None
+num_train_epochs = train_args.num_train_epochs
 
 
 def create_datasets(dataset_name, dataset_sub_name):
@@ -121,14 +122,14 @@ def train():
         num_train_epochs=1,
         gradient_checkpointing=True,
         bf16=True,
-        learning_rate=5e-5,
+        learning_rate=2e-5,
         warmup_ratio=0.1,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
-        max_steps=10,
+        # max_steps=10,
     )
 
     trainer = SFTTrainer(
