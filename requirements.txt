@@ -13,4 +13,4 @@ deepspeed
 evaluate
 scikit-learn
 wandb
-flash-attn
+# flash-attn

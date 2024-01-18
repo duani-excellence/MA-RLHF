@@ -21,7 +21,7 @@ MA-RLHF(Multiple Adapter-RLHF)  Project
 CUDA required
 
 ```bash
-conda create -n llm python=3.10
+conda create -n llm python=3.9
 conda activate llm
 pip install -r requirements.txt
 ```
