@@ -192,6 +192,7 @@ def train():
         max_length=seq_length,
         deepspeed=deepspeed_config_name,
         bf16=True,
+        lr_scheduler_type='cosine'
         # max_steps=10,
     )
 

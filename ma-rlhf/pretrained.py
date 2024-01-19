@@ -98,6 +98,7 @@ def train():
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
+        lr_scheduler_type='cosine'
         # max_steps=10,
     )
 

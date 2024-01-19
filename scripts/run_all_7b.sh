@@ -17,25 +17,25 @@ echo '-------------------------------------------------------'
 date
 echo '-------------------------------------------------------'
 
-# # stage: second pretrained
-pt_dataset_name='imdb'
-deepspeed ./ma-rlhf/pretrained.py \
-	--dataset_name=${pt_dataset_name} \
-	--model_name=${base_model_path} \
-	--seq_length=512 \
-	--batch_size=16 \
-	--output_name=${model_pretrained_lora_path} \
-	--use_QLora=True \
-	--use_flash_attention_2=True \
-	--deepspeed_config_name=${deepspeed_config_name} \
-	--deepspeed=${deepspeed_config_name} \
-	--num_train_epochs=1
+# # # stage: second pretrained
+# pt_dataset_name='imdb'
+# deepspeed ./ma-rlhf/pretrained.py \
+# 	--dataset_name=${pt_dataset_name} \
+# 	--model_name=${base_model_path} \
+# 	--seq_length=512 \
+# 	--batch_size=16 \
+# 	--output_name=${model_pretrained_lora_path} \
+# 	--use_QLora=True \
+# 	--use_flash_attention_2=True \
+# 	--deepspeed_config_name=${deepspeed_config_name} \
+# 	--deepspeed=${deepspeed_config_name} \
+# 	--num_train_epochs=1
 
-# merge pretrained + LoRA = pretrained_lora
-python ./ma-rlhf/merge_adapter.py \
-	--base_model_name=${base_model_path} \
-	--model_name=${model_pretrained_lora_path} \
-	--merged_model_name=${model_pretrained_full_path}
+# # merge pretrained + LoRA = pretrained_lora
+# python ./ma-rlhf/merge_adapter.py \
+# 	--base_model_name=${base_model_path} \
+# 	--model_name=${model_pretrained_lora_path} \
+# 	--merged_model_name=${model_pretrained_full_path}
 
 
 echo '-------------------------------------------------------'
@@ -43,8 +43,6 @@ date
 echo '-------------------------------------------------------'
 
 # stage: sft
-# alpaca 1 epochs 20min,  8*3090, 18GB, ZeRO Stage1,
-# data 52k
 sft_dataset_name='yahma/alpaca-cleaned'
 model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft.py \
@@ -56,7 +54,7 @@ deepspeed ./ma-rlhf/sft.py \
 	--batch_size=16 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=1
+	--num_train_epochs=2
 
 
 # merge SFT
@@ -81,12 +79,13 @@ deepspeed ./ma-rlhf/reward_model.py \
 	--use_QLora=True \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=1
+	--num_train_epochs=2
 
 
 echo '-------------------------------------------------------'
 date
 echo '-------------------------------------------------------'
+# /root/Projects/MA-RLHF/output/reward_model_lora/checkpoint-500
 # stage ppo
 rm_dataset_name='Anthropic/hh-rlhf'
 deepspeed ./ma-rlhf/ppo.py \

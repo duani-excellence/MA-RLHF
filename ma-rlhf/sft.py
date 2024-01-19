@@ -121,12 +121,13 @@ def train():
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=2e-5,
-        warmup_ratio=0.1,
+        warmup_ratio=0.05,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
+        lr_scheduler_type='cosine'
         # max_steps=10,
     )
 
