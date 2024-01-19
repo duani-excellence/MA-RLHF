@@ -207,8 +207,6 @@ def train():
 
     trainer.train()
     trainer.save_model(output_name)
-    # model.save_pretrained(output_name)
-    # tokenizer.save_pretrained(output_name)
 
 
 if __name__ == "__main__":

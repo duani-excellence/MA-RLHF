@@ -95,7 +95,6 @@ def create_sft_datasets(datasets, tokenizer, format_func, seq_length=512):
 
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
-    # torch.distributed.barrier()
 
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
@@ -109,7 +108,6 @@ def train():
     # else:
     #     format_fun = None
     format_fun = formatting_alpaca_func
-
     train_datasets, _ = create_sft_datasets(datasets, tokenizer, format_fun, seq_length)
 
     # peft
@@ -119,7 +117,7 @@ def train():
         output_dir=output_name,
         # save_strategy='steps',
         logging_steps=1,
-        num_train_epochs=1,
+        num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=2e-5,

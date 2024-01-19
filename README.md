@@ -73,3 +73,15 @@ Environment 8x3090
 |     |     |     |
 |     |     |     |
 |     |     |     |
+
+- 8xA800
+- Basic Model LLaMA2-7B 1 epochs
+- Pretrained : IMDB 22k Time: 20min
+- SFT : Alpaca 52k Time: 20min
+- Reward Model: HHRLHF 160k Time 1h20min
+- PPO :         HHRLHF 160k Time 1h
+- total  : 3h
+
+
+- Basic Model LLaMA2-7B 1 epochs
+- 

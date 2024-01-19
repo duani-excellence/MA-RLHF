@@ -1,10 +1,6 @@
-# wandb
 
-base_model_path='meta-llama/Llama-2-7b-hf'
-
-
+base_model_path='meta-llama/Llama-2-13b-hf'
 deepspeed_config_name=./config/ds.json
-
 output_path='./output'
 
 model_pretrained_lora_path=${output_path}'/pretrained_lora'
@@ -14,7 +10,6 @@ model_sft_full_path=${output_path}'/sft_full'
 model_reward_model_lora_path=${output_path}'/reward_model_lora'
 model_ppo_lora_path=${output_path}'/ppo_lora'
 model_ppo_full_path=${output_path}'/ppo_full'
-
 
 
 # imdb 1 epochs 20min,  8*3090, 15GB, ZeRO Stage1,
@@ -31,6 +26,7 @@ deepspeed ./ma-rlhf/pretrained.py \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--deepspeed=${deepspeed_config_name} \
+	--num_train_epochs=1
 
 
 # merge pretrained + LoRA = pretrained_lora
@@ -41,7 +37,8 @@ python ./ma-rlhf/merge_adapter.py \
 
 
 # stage: sft
-#alpaca 1 epochs 37min,  8*3090, 18GB, ZeRO Stage1,
+# alpaca 1 epochs 20min,  8*3090, 18GB, ZeRO Stage1,
+# data 52k
 sft_dataset_name='yahma/alpaca-cleaned'
 model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft.py \
@@ -50,9 +47,10 @@ deepspeed ./ma-rlhf/sft.py \
 	--seq_length=512 \
 	--output_name=${model_sft_lora_path} \
 	--use_QLora=True \
-	--batch_size=32 \
+	--batch_size=16 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
+	--num_train_epochs=1
 
 
 # merge SFT
@@ -63,33 +61,35 @@ python ./ma-rlhf/merge_adapter.py \
 
 
 # stage reward model
+# 1h20min, 16w
 rm_dataset_name='Anthropic/hh-rlhf'
 deepspeed ./ma-rlhf/reward_model.py \
 	--dataset_name=${rm_dataset_name} \
 	--model_name=${model_sft_full_path} \
 	--seq_length=512 \
-	--batch_size=16 \
+	--batch_size=8 \
 	--output_name=${model_reward_model_lora_path} \
 	--use_QLora=True \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
+	--num_train_epochs=1
 
 
 # stage ppo
+# 1h 16w
 rm_dataset_name='Anthropic/hh-rlhf'
 deepspeed ./ma-rlhf/ppo.py \
 	--dataset_name=${rm_dataset_name} \
 	--model_name=${model_sft_full_path} \
 	--reward_model_name=${model_reward_model_lora_path} \
-	--seq_length=8 \
 	--output_name=${model_ppo_lora_path} \
 	--use_QLora=True \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--batch_size=8 \
+	--batch_size=4 \
 	--mini_batch_size=2 \
 	--ppo_epochs=1 \
-	--output_max_length=128 \
+	--output_max_length=256 \
 	--seq_length=512
 
 
@@ -104,7 +104,7 @@ python ./ma-rlhf/merge_adapter.py \
 echo "------------------print sft result------------------"
 python ./ma-rlhf/generate.py \
 	--model_name=${model_sft_full_path} \
-	--prompt='hello large language model?' \
+	--prompt='give me a code about quick sort' \
 	--max_new_tokens=128
 
 

@@ -75,7 +75,7 @@ def create_dataset(dataset_name, tokenizer):
             "input_ids": [],
         }
         for question in examples["question"]:
-            query = f"###Question:{question}\n###Answer: "
+            query = f"###Question:{question}\n###Answer:"
             tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
             new_examples["query"].append(query)
             new_examples["input_ids"].append(tokenized_question["input_ids"][0])
@@ -211,8 +211,7 @@ def train():
             print(f"step:{epoch}, loss:{stats['ppo/loss/total']}")
 
         if save_freq and epoch and epoch % save_freq == 0:
-            trainer.save_pretrained(output_path)
-
+            trainer.save_pretrained(output_name)
 
 if __name__ == "__main__":
     train()

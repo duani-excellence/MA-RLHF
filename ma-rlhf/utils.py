@@ -185,12 +185,12 @@ def format_prompt_answer(question, answer):
 
 
 def format_prompt(question):
-    return f"###Question:{question}\n###Answer: "
+    return f"###Question:{question}\n###Answer:"
 
 
 # medical finetune data haven't 'input', only has 'instruction'
 def formatting_finetune_func(example):
-    text = f"###Question: {example['instruction']}\n###Answer:{example['output']}{DEFINE_EOS_TOKEN}"
+    text = f"###Question:{example['instruction']}\n###Answer:{example['output']}{DEFINE_EOS_TOKEN}"
     return text
 
 
