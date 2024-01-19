@@ -5,17 +5,17 @@ MA-RLHF(Multiple Adapter-RLHF)  is a low-cost and efficient large language model
 Feature：
 
 - Deepspeed + TRL + QLoRA + Flash-Attntion 2
-- LLaMA2-13B
+- LLaMA-2-13B ZeRO-1 RLHF 8xA800-40GB 
 
 
 
 ## MA-RLHF Pipeline & Dataset
 
-- `Pretrained`: imdb
-- `SFT`: yahma/alpaca-cleaned
-- `Reward Model`: Anthropic/hh-rlhf
-- `PPO`: Anthropic/hh-rlhf
-
+- `Pretrained`: imdb, 20k
+- `SFT`: yahma/alpaca-cleaned, 52k
+- `Reward Model`: Anthropic/hh-rlhf, 160k
+- `PPO`: Anthropic/hh-rlhf, 160k 
+  - TODO: PPO train data use alpaca
 
 
 ## Installation
@@ -59,26 +59,39 @@ deepspeed ./test/test_QLoRA.py
 
 Environment 8x3090
 
-|            | 8xA100    | 8xA100      | 8xA100     | 8xA100      | 8x3090     | 8x3090     |
-| ---------- | --------- | ----------- | ---------- | ----------- | ---------- | ---------- |
-| VRAM       | 40GB      | 40GB        | 80GB       | 80GB        | 24GB       | 24GB       |
-| Model      | LLaMA2-7B | LLaMA-2-13B | LLaMA-2-7B | LLaMA-2-13B | LLaMA-2-7B | LLaMA-2-7B |
-| ZeRO       | 1         | 1           |            |             |            |            |
-| Epochs     | 1         | 1           |            |             |            |            |
-| Pretrained | 20min     | x           |            |             |            |            |
-| SFT        | 20min     | x           |            |             |            |            |
-| Reward     | 1h20min   | x           |            |             |            |            |
-| PPO        | 1h30min   | x           |            |             |            |            |
-| Total      | 3h30min   | x           |            |             |            |            |
+|            | 8xA100    | 8xA100         | 8x3090     | 8x3090      |
+| ---------- | --------- | -------------- | ---------- | ----------- |
+| VRAM       | 40GB      | 40GB           | 24GB       | 24GB        |
+| Model      | LLaMA2-7B | LLaMA-2-13B    | LLaMA-2-7B | LLaMA-2-13B |
+| ZeRO       | 1         | 1              |            |             |
+| Epochs     | 1         | 2              |            |             |
+| Pretrained | 20min     | /              |            |             |
+| SFT        | 20min     | 20min          |            |             |
+| Reward     | 1h20min   | 10h            |            |             |
+| PPO        | 1h30min   | 3.5day(1pochs) |            |             |
+| VRAM       | 22GB/40GB | 35GB/40GB      |            | ZeRO-3      |
+| Total      | 3h30min   | 4day           |            |             |
 
 
 
 ## Quick Start
 
-运行全流程
+Test with 
 
 ```bash
 ./scripts/run_all.sh
+```
+
+Llama-2-13B
+
+```
+./scripts/run_all_13B.sh
+```
+
+Llama-2-7B
+
+```
+./scripts/run_all_7B.sh
 ```
 
 ### 0. run path
