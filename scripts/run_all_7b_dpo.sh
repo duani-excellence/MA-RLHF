@@ -42,8 +42,8 @@ echo '-------------------------------------------------------'
 # 	--merged_model_name=${model_sft_full_path}
 
 
-# /root/Projects/MA-RLHF/output/reward_model_lora/checkpoint-500
 # stage dpo
+# llama2-7b 22GB 2h30min
 rm_dataset_name='Anthropic/hh-rlhf'
 deepspeed ./ma-rlhf/dpo.py \
 	--dataset_name=${rm_dataset_name} \
@@ -52,7 +52,7 @@ deepspeed ./ma-rlhf/dpo.py \
 	--use_QLora=True \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--batch_size=4 \
+	--batch_size=16 \
 	--mini_batch_size=2 \
 	--num_train_epochs=1 \
 	--output_max_length=256 \

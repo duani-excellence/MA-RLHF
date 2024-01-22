@@ -8,12 +8,14 @@ from utils import (
     create_peft_reward_model,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    create_peft,
 )
 from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
     HfArgumentParser,
     AutoModelForSequenceClassification,
+    AutoModelForCausalLM,
     TrainingArguments
 )
 
@@ -52,15 +54,14 @@ def create_model_tokenizer(name):
     device_map = {"": Accelerator().local_process_index}
     print('device map: ', device_map)
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_name, quantization_config=bnb_config, device_map=device_map, num_labels=1
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, quantization_config=bnb_config, device_map=device_map,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, model_max_length=seq_length)
 
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
-    # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
     model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
@@ -69,33 +70,6 @@ def create_model_tokenizer(name):
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.eos_token = DEFINE_EOS_TOKEN
-
-# for prompt, chosen, rejected
-def preprocess_function(examples):
-    new_examples = {
-        "input_ids_chosen": [],
-        "attention_mask_chosen": [],
-        "input_ids_rejected": [],
-        "attention_mask_rejected": [],
-    }
-    for question, response_j, response_k in zip(
-        examples["question"], examples["response_chosen"], examples["response_rejected"]
-    ):
-        tokenized_j = tokenizer(
-            f"###Question:{question}\n###Answer:{response_j}{tokenizer.eos_token}",
-            truncation=True,
-        )
-        tokenized_k = tokenizer(
-            f"###Question:{question}\n###Answer:{response_k}{tokenizer.eos_token}",
-            truncation=True,
-        )
-
-        new_examples["input_ids_chosen"].append(tokenized_j["input_ids"])
-        new_examples["attention_mask_chosen"].append(tokenized_j["attention_mask"])
-        new_examples["input_ids_rejected"].append(tokenized_k["input_ids"])
-        new_examples["attention_mask_rejected"].append(tokenized_k["attention_mask"])
-
-    return new_examples
 
 
 # Anthropic/hh-rlhf
@@ -117,14 +91,13 @@ def preprocess_function_hhrlhf(examples):
         prompt_rejected = re.sub(r'Human:', '###Question:', prompt_rejected)
         prompt_rejected = re.sub(r'Assistant:', '\n###Answer:', prompt_rejected)
 
-
         prompt_question = prompt_chosen.split('\n###Answer:',1)[0] + '\n###Answer:'
         response_chosen = prompt_chosen.split('\n###Answer:',1)[1]
         response_rejected = prompt_rejected.split('\n###Answer:',1)[1]
 
         new_examples['prompt'].append(prompt_question)
         new_examples['chosen'].append(response_chosen)
-        new_examples['rejected'].append(rejected)
+        new_examples['rejected'].append(response_rejected)
 
 
     return new_examples
@@ -137,29 +110,29 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
     train_dataset = train_dataset.map(
         preprocess_function_hhrlhf,
         batched=True,
-        num_proc=8,
+        num_proc=16,
     )
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
     train_dataset = train_dataset.filter(
-        lambda x: len(x["input_ids_chosen"]) <= seq_length
-        and len(x["input_ids_rejected"]) <= seq_length
+        lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
+        and len(x["prompt"]) + len(x["rejected"]) <= seq_length
     )
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
 
     eval_dataset = eval_dataset.map(
         preprocess_function_hhrlhf,
         batched=True,
-        num_proc=8,
+        num_proc=16,
     )
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
     eval_dataset = eval_dataset.filter(
-        lambda x: len(x["input_ids_chosen"]) <= seq_length
-        and len(x["input_ids_rejected"]) <= seq_length
+        lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
+        and len(x["prompt"]) + len(x["rejected"]) <= seq_length
     )
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
 
     return train_dataset, eval_dataset
 
@@ -171,14 +144,14 @@ def train():
     )
 
     # PEFT
-    peft_config = create_dpo_model(is_peft)
+    peft_config = create_peft(is_peft)
 
     training_args = TrainingArguments(
         output_dir=output_name,
         push_to_hub=False,
         # save_strategy='epoch',
         logging_steps=1,
-        num_train_epochs=1,
+        num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=2e-5,
@@ -189,7 +162,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        max_steps=10,
+        # max_steps=10,
     )
 
     trainer = DPOTrainer(
