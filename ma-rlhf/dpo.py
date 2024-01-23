@@ -104,11 +104,8 @@ def preprocess_function_hhrlhf(examples):
 
 
 def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
-    train_dataset = load_dataset(datasets_name, split='train' )
+    train_dataset = load_dataset(datasets_name, split='train')
     eval_dataset = load_dataset(datasets_name, split='test')
-
-    train_dataset = train_dataset.select(range(10000))
-    eval_dataset = eval_dataset.select(range(10000))
 
     train_dataset = train_dataset.map(
         preprocess_function_hhrlhf,
@@ -151,21 +148,21 @@ def train():
 
     training_args = TrainingArguments(
         output_dir=output_name,
-        push_to_hub=False,
+        # push_to_hub=False,
         # save_strategy='epoch',
         logging_steps=1,
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=2e-5,
-        warmup_ratio=0.1,
+        warmup_ratio=0.05,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        # max_steps=10,
+        # max_steps=200,
     )
 
     trainer = DPOTrainer(
@@ -178,7 +175,8 @@ def train():
         tokenizer=tokenizer,
         peft_config=peft_config,
         max_prompt_length= output_max_length,
-        max_length= seq_length,
+        max_length=seq_length,
+        max_target_length=output_max_length,
     )
 
 
