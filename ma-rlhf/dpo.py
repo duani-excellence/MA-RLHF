@@ -92,8 +92,8 @@ def preprocess_function_hhrlhf(examples):
         prompt_rejected = re.sub(r'Assistant:', '\n###Answer:', prompt_rejected)
 
         prompt_question = prompt_chosen.split('\n###Answer:',1)[0] + '\n###Answer:'
-        response_chosen = prompt_chosen.split('\n###Answer:',1)[1]
-        response_rejected = prompt_rejected.split('\n###Answer:',1)[1]
+        response_chosen = prompt_chosen.split('\n###Answer:',1)[1] + DEFINE_EOS_TOKEN
+        response_rejected = prompt_rejected.split('\n###Answer:',1)[1] + DEFINE_EOS_TOKEN
 
         new_examples['prompt'].append(prompt_question)
         new_examples['chosen'].append(response_chosen)
@@ -104,8 +104,11 @@ def preprocess_function_hhrlhf(examples):
 
 
 def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
-    train_dataset = load_dataset(datasets_name, split='train')
+    train_dataset = load_dataset(datasets_name, split='train' )
     eval_dataset = load_dataset(datasets_name, split='test')
+
+    train_dataset = train_dataset.select(range(10000))
+    eval_dataset = eval_dataset.select(range(10000))
 
     train_dataset = train_dataset.map(
         preprocess_function_hhrlhf,
