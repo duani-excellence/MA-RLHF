@@ -3,6 +3,7 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
 from utils import ScriptArguments, format_prompt
 import torch
+from utils import DEFINE_EOS_TOKEN
 
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
@@ -16,6 +17,11 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name, torch_dtype=torch.float16, use_flash_attention_2=True
 ).to(device)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.eos_token = DEFINE_EOS_TOKEN
+model.config.eos_token = DEFINE_EOS_TOKEN
+model.config.eos_token_id = tokenizer.eos_token_id
 
 # instruction = '我心情不好，有点头痛该怎么办？'
 # input = f'###Question: {instruction}\n ###Answer: '
@@ -38,6 +44,5 @@ print(output)
 2. 尽量让自己的身体和精神更健康，尽量减少不必要的压力，尽量减少不必要的压力，尽量减少不必要的压力，尽量减少不必要的压力，尽量减少不必要的压力，尽量减少不必要的压力。
 3. 尽量减少喝酒，尽量减少喝酒，尽量减少喝酒，尽量减少喝酒，尽量减少喝酒，尽量减少喝酒。
 4. 尽量减少吃
-
 
 '''

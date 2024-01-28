@@ -139,6 +139,7 @@ def train():
         peft_config=peft_config,
         packing=True,
         tokenizer=tokenizer,
+        # formatting_func=formatting_alpaca_func,
     )
     trainer.model.print_trainable_parameters()
     trainer.train()

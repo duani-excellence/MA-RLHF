@@ -12,7 +12,8 @@ from transformers import (
     HfArgumentParser,
 )
 
-DEFINE_EOS_TOKEN = '<\s>'
+DEFINE_EOS_TOKEN = '''</s>'''
+# DEFINE_BOS_TOKEN = '''<s>'''
 
 
 def is_main_process():
@@ -181,7 +182,7 @@ class ScriptArguments:
 
 def format_prompt_answer(question, answer):
     '''for generation'''
-    return f"###Question:{question}\n###Answer:{answer}{DEFINE_EOS_TOKEN}"
+    return f"###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
 
 
 def format_prompt(question):
@@ -190,16 +191,16 @@ def format_prompt(question):
 
 # medical finetune data haven't 'input', only has 'instruction'
 def formatting_finetune_func(example):
-    text = f"###Question:{example['instruction']}\n###Answer:{example['output']}{DEFINE_EOS_TOKEN}"
+    text = f"###Question: {example['instruction']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
     return text
 
 
 def formatting_reward_func(example):
-    text = f"###Question:{example['question']}\n###Answer:{example['response_rejected']}{DEFINE_EOS_TOKEN}"
+    text = f"###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
     return text
 
 
 def formatting_alpaca_func(example):
-    return f"###Question:{example['instruction']} {example['input']}\n###Answer:{example['output']}{DEFINE_EOS_TOKEN}"
+    return f"###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
     # # example['text']=
     # return example
