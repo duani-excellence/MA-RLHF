@@ -31,7 +31,7 @@ output_name = train_args.output_name
 is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
 # num_train_epochs = train_args.num_train_epochs
-
+gradient_accumulation_steps = train_args.gradient_accumulation_steps
 
 def create_model_tokenizer(name, rm_model_name, peft_config):
     # QLoRA
@@ -157,7 +157,7 @@ def train():
         learning_rate=2e-5,
         batch_size=batch_size,
         mini_batch_size=mini_batch_size,
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         optimize_cuda_cache=True,
         early_stopping=True,
         target_kl=0.1,
@@ -178,7 +178,7 @@ def train():
     )
 
     reward_baseline = 0.0
-    save_freq = 100
+    save_freq = 50
 
     # for epoch, batch in enumerate(trainer.dataloader):
     for epoch, batch in enumerate(trainer.dataloader):
@@ -205,10 +205,14 @@ def train():
 
         ## PPO Step
         stats = trainer.step(question_tensors, response_tensors, rewards)
+        trainer.log_stats(stats, batch, rewards)
 
         if is_main_process():
             print(texts[0])
-            print(f"step:{epoch}, loss:{stats['ppo/loss/total']}")
+            print(f"step:{epoch},
+                loss:{stats['ppo/loss/total']},
+                reward_mean:{stats['reward_mean']}"
+            )
 
         if save_freq and epoch and epoch % save_freq == 0:
             trainer.save_pretrained(output_name)

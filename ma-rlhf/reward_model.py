@@ -104,9 +104,7 @@ def preprocess_function_hhrlhf(examples):
         "input_ids_rejected": [],
         "attention_mask_rejected": [],
     }
-    for prompt_chosen, prompt_rejected in zip(
-        examples["chosen"], examples["rejected"]
-    ):
+    for prompt_chosen, prompt_rejected in zip(examples["chosen"], examples["rejected"]):
 
         prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
         prompt_chosen = re.sub(r'Assistant:', '\n###Answer:', prompt_chosen)
@@ -168,9 +166,7 @@ def create_reward_model_datasets(datasets_name, dataset_sub_name, tokenizer):
 
 def train():
     model, tokenizer = create_model_tokenizer(model_name)  # model is sequence classification
-    train_datasets, test_datasets = create_reward_model_datasets(
-        dataset_name, None, tokenizer
-    )
+    train_datasets, test_datasets = create_reward_model_datasets(dataset_name, None, tokenizer)
 
     # PEFT
     peft_config = create_peft_reward_model(is_peft)
@@ -192,7 +188,7 @@ def train():
         max_length=seq_length,
         deepspeed=deepspeed_config_name,
         bf16=True,
-        lr_scheduler_type='cosine'
+        lr_scheduler_type='cosine',
         # max_steps=10,
     )
 
