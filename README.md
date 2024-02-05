@@ -5,7 +5,9 @@ MA-RLHF(Multiple Adapter-RLHF)  is a low-cost and efficient large language model
 Feature：
 
 - Deepspeed + TRL + QLoRA + Flash-Attntion 2
-- LLaMA-2-13B ZeRO-1 RLHF 8xA800-40GB 
+- RLHF-PPO : LLaMA-2-13B ZeRO-1 RLHF 8xA800-40GB 
+- DPO: Mistral7B + DPO 1h+ in 3090x4
+- ChineseLLM: Support Chinese LLM SFT (baichuan2)
 
 ## Result
 
@@ -93,6 +95,12 @@ Llama-2-7B
 
 ```
 ./scripts/run_all_7B_dpo.sh
+```
+
+🚀 Baichuan2-SFT
+
+```
+./scripts/run_all_7b_sft_baichuan2.sh
 ```
 
 ### 0. run path
@@ -254,6 +262,7 @@ DPO
 - [ ] Rejection sampling
 - [ ] Custom Data Tutorial
 - [ ] Video For MA-RLHF 
+- [x] support chinese llm (baichuan2)
 
 
 
