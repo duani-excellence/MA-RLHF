@@ -13,7 +13,7 @@ from transformers import (
 )
 
 DEFINE_EOS_TOKEN = '''</s>'''
-# DEFINE_BOS_TOKEN = '''<s>'''
+DEFINE_BOS_TOKEN = '''<s>'''
 
 
 def is_main_process():
@@ -186,7 +186,7 @@ def format_prompt_answer(question, answer):
 
 
 def format_prompt(question):
-    return f"###Question:{question}\n###Answer:"
+    return f"###Question: {question}\n###Answer: "
 
 
 # medical finetune data haven't 'input', only has 'instruction'
@@ -204,3 +204,9 @@ def formatting_alpaca_func(example):
     return f"###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
     # # example['text']=
     # return example
+
+
+# def formatting_alpaca_chinese_func(example):
+#     return f"{DEFINE_BOS_TOKEN} ###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
+#     # # example['text']=
+#     # return example

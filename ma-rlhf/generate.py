@@ -14,9 +14,9 @@ max_new_tokens = train_args.max_new_tokens
 
 device = 'cuda:0'
 model = AutoModelForCausalLM.from_pretrained(
-    model_name, torch_dtype=torch.float16, use_flash_attention_2=True
+    model_name, torch_dtype=torch.float16, use_flash_attention_2=False, trust_remote_code=True,
 ).to(device)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.eos_token = DEFINE_EOS_TOKEN

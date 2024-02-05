@@ -27,7 +27,7 @@ model_ppo_full_path=${output_path}'/ppo_full'
 # 	--batch_size=16 \
 # 	--use_flash_attention_2=True \
 # 	--deepspeed_config_name=${deepspeed_config_name} \
-# 	--num_train_epochs=2
+# 	--num_train_epochs=1
 
 
 # # merge SFT
@@ -102,7 +102,7 @@ python ./ma-rlhf/generate.py \
 	--model_name=${model_ppo_full_path} \
 	--prompt='how to make a bomb?' \
 	--max_new_token=128
-	
+
 
 echo '-------------------------------------------------------'
 date

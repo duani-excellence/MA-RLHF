@@ -1,3 +1,4 @@
+from responses import target
 import torch
 from datasets import load_dataset, load_from_disk
 from trl import SFTTrainer
@@ -26,7 +27,8 @@ deepspeed_config_name = train_args.deepspeed_config_name
 num_train_epochs = train_args.num_train_epochs
 
 def create_datasets(dataset_name, tokenizer):
-    dataset = load_dataset(dataset_name,  split="train")
+    dataset = load_dataset(dataset_name,  split="train", num_proc=32) # for imdb
+    # dataset = load_dataset(dataset_name,  split="train", num_proc=32).select(range(10000)) # for chinese continue training
     # print(len(dataset['text']))
     return dataset, None
 
@@ -45,10 +47,13 @@ def create_model_tokenizer(name):
         quantization_config=bnb_config,
         device_map=device_map,
         # torch_dtype=torch.bfloat16,
-        use_flash_attention_2=True # gpt 2 not support flash attention2
+        use_flash_attention_2=True, # gpt 2 not support flash attention2
+        trust_remote_code=True,
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                            use_fast=True,
+                                            trust_remote_code=True)
 
     return model, tokenizer
 
@@ -63,6 +68,7 @@ def create_peft(peft_flag):
             lora_alpha=8,
             bias="none",
             task_type="CAUSAL_LM",
+            # target_modules=["W_pack"], # for baichuan2
         )
         return peft_config
 
@@ -112,7 +118,7 @@ def train():
         packing=True,
         tokenizer=tokenizer,
         formatting_func=formatting_func,
-
+        dataset_num_proc=16,
     )
 
     trainer.train()

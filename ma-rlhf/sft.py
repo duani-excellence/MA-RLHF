@@ -19,6 +19,7 @@ from utils import (
     formatting_finetune_func,
     formatting_reward_func,
     formatting_alpaca_func,
+    formatting_alpaca_chinese_func,
 )
 
 parser = HfArgumentParser(ScriptArguments)
@@ -59,7 +60,7 @@ def create_model_tokenizer(name):
         device_map=device_map,
         # torch_dtype=torch.bfloat16,
         use_flash_attention_2=True, # gpt 2 not support flash attention2
-        trust_remote_code=True
+        trust_remote_code=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -76,6 +77,7 @@ def create_peft(peft_flag):
             lora_alpha=8,
             bias="none",
             task_type="CAUSAL_LM",
+            # target_modules=["W_pack"],
         )
         return peft_config
 
@@ -121,14 +123,14 @@ def train():
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=2e-5,
-        warmup_ratio=0.05,
+        warmup_ratio=0.03,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
-        lr_scheduler_type='cosine'
-        # max_steps=10,
+        lr_scheduler_type='cosine',
+        max_steps=10,
     )
 
     trainer = SFTTrainer(
