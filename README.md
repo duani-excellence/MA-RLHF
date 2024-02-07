@@ -8,6 +8,7 @@ Feature：
 - RLHF-PPO : LLaMA-2-13B ZeRO-1 RLHF 8xA800-40GB 
 - DPO: Mistral7B + DPO 1h+ in 3090x4
 - ChineseLLM: Support Chinese LLM SFT (baichuan2)
+- Unsloth: Support LLM Finetune with Unsloth
 
 ## Result
 
@@ -52,6 +53,25 @@ conda create -n llm python=3.11
 conda activate llm
 pip install -r requirements.txt
 pip install flash-attn
+```
+
+Create Unsloth Environment
+
+```bash
+conda create -n llm_unsloth python=3.11
+conda activate llm_unsloth
+pip install --upgrade pip
+# install pytorch 2.1.0 and triton on cu118 or cu121 
+pip install --upgrade --force-reinstall --no-cache-dir torch==2.1.0 triton \
+  --index-url https://download.pytorch.org/whl/cu118
+# install packaging
+pip install packaging -i https://pypi.tuna.tsinghua.edu.cn/simple
+export CUDA_HOME=/usr/local/cuda-11.7
+# install unsloth
+pip install "unsloth[cu118] @ git+https://github.com/unslothai/unsloth.git" -i https://pypi.tuna.tsinghua.edu.cn/simple
+# install flash-attn manually (torch vesion + python version)
+wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.1.post1/flash_attn-2.5.1.post1+cu118torch2.1cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+ pip install flash_attn-2.5.1.post1+cu118torch2.1cxx11abiFALSE-cp311-cp311-linux_x86_64.whl 
 ```
 
 Setting Environment
@@ -101,6 +121,12 @@ Llama-2-7B
 
 ```
 ./scripts/run_all_7b_sft_baichuan2.sh
+```
+
+🚀 Unsloth-SFT
+
+```
+./scripts/run_7b_sft_unsloth.sh
 ```
 
 ### 0. run path
