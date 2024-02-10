@@ -143,8 +143,8 @@ def train():
 
     # generation config
     generation_kwargs = {
-        "top_k": 200,
-        "top_p": 0.90,
+        "top_k": 50,
+        "top_p": 0.95,
         "temperature": 1.2,
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
@@ -209,10 +209,7 @@ def train():
 
         if is_main_process():
             print(texts[0])
-            print(f"step:{epoch},
-                loss:{stats['ppo/loss/total']},
-                reward_mean:{stats['reward_mean']}"
-            )
+            print(f"step:{epoch}/all:{len(trainer.dataloader)},loss:{stats['ppo/loss/total']},reward_mean:{stats['env/reward_mean']}" )
 
         if save_freq and epoch and epoch % save_freq == 0:
             trainer.save_pretrained(output_name)

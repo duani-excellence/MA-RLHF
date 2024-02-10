@@ -130,7 +130,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        max_steps=10,
+        # max_steps=10,
     )
 
     trainer = SFTTrainer(

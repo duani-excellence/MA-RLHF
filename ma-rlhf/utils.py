@@ -205,8 +205,7 @@ def formatting_alpaca_func(example):
     # # example['text']=
     # return example
 
-
-# def formatting_alpaca_chinese_func(example):
-#     return f"{DEFINE_BOS_TOKEN} ###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
-#     # # example['text']=
-#     # return example
+def formatting_alpaca_chinese_func(example):
+    return f"{DEFINE_BOS_TOKEN} ###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
+    # # example['text']=
+    # return example
