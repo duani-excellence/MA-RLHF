@@ -53,7 +53,7 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name, use_fast=True, model_max_length=seq_length,
+        model_name, use_fast=True,
         trust_remote_code=True,
     )
     tokenizer.pad_token = tokenizer.eos_token
@@ -91,8 +91,8 @@ def create_dataset(dataset_name, tokenizer):
             # format hh-rlhf dataset for PPO
             prompt_chosen = prompt_chosen.rsplit('Assistant:',1)[0]
             prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
-            prompt_chosen = re.sub(r'Assistant:', '\n###Answer:', prompt_chosen)
-            query = prompt_chosen + '\n###Answer:'
+            prompt_chosen = re.sub(r'Assistant:', '###Answer:', prompt_chosen)
+            query = prompt_chosen + '###Answer:'
 
             # TODO:truncation Answer Process
             tokenized_question = tokenizer(query, return_tensors='pt')
@@ -120,18 +120,6 @@ def collator(examples):
         batch['input_ids'].append(torch.tensor(example['input_ids'], dtype=torch.long))
     return batch
 
-# def collator(data):
-#     return dict((key, [d[key] for d in data]) for key in data[0])
-
-
-# def collator(examples):
-#     batch = {'query': [], 'input_ids': []}
-#     for example in examples:
-#         batch['query'].append(example['query'])
-#         batch['input_ids'].append(torch.tensor(example['input_ids'], dtype=torch.long))
-#     return batch
-
-
 def train():
     peft_config = create_peft(is_peft)
     model, tokenizer = create_model_tokenizer(
@@ -149,8 +137,9 @@ def train():
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
+        "forced_eos_token_id": True,
     }
-    output_length_sampler = LengthSampler(32, output_max_length)
+    output_length_sampler = LengthSampler(128, output_max_length)
 
     config = PPOConfig(
         log_with='wandb',
@@ -197,11 +186,27 @@ def train():
         # calculate Rewards with MARL
         # https://huggingface.co/docs/trl/multi_adapter_rl
         # trl/examples/scripts/ppo_multi_adapter.py
-        inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt").to(
-            trainer.accelerator.device
-        )
-        raw_rewards = trainer.accelerator.unwrap_model(trainer.model).compute_reward_score(**inputs)
-        rewards = [raw_rewards[i, -1, 0] for i in range(len(raw_rewards))]  # take last token
+        # inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt").to(
+        #     trainer.accelerator.device
+        # )
+        # # raw_rewards = trainer.accelerator.unwrap_model(trainer.model).compute_reward_score(**inputs)
+        # raw_rewards = trainer.accelerator.unwrap_model(trainer.model).compute_reward_score(**inputs)
+        # # raw_rewards = trainer.model.compute_reward_score(**inputs)
+
+
+        # # raw_rewards = trainer.compute_reward_score(**inputs)
+        # rewards = [raw_rewards[i, -1, 0]  for i in range(len(raw_rewards))]  # take last token
+        # # rewards = [torch.tensor(output[0]["score"] - script_args.reward_baseline) for output in pipe_outputs]
+        # print('【original】:', rewards)
+
+        # one-by-one rewards
+        rm_model = trainer.accelerator.unwrap_model(trainer.model)
+        raw_rewards = []
+        for text in texts:
+            inputs = tokenizer(text, return_tensors='pt').to(trainer.accelerator.device)
+            score = rm_model.compute_reward_score(**inputs)[0,-1,0]
+            raw_rewards.append(score)
+        rewards = raw_rewards
 
         ## PPO Step
         stats = trainer.step(question_tensors, response_tensors, rewards)
@@ -209,10 +214,14 @@ def train():
 
         if is_main_process():
             print(texts[0])
-            print(f"step:{epoch}/all:{len(trainer.dataloader)},loss:{stats['ppo/loss/total']},reward_mean:{stats['env/reward_mean']}" )
+            print(rewards)
+            print(f"step:{epoch}/all:{len(trainer.dataloader)},loss:{stats['ppo/loss/total']},mean_scores:{stats['ppo/mean_scores']}" )
 
         if save_freq and epoch and epoch % save_freq == 0:
-            trainer.save_pretrained(output_name)
+            trainer.save_pretrained(f'{output_name}_{epoch}')
+            print(f'{output_name}_{epoch}')
+            # break
+    trainer.save_pretrained(output_name)
 
 if __name__ == "__main__":
     train()

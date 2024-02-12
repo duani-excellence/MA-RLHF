@@ -202,10 +202,8 @@ def formatting_reward_func(example):
 
 def formatting_alpaca_func(example):
     return f"###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
-    # # example['text']=
-    # return example
+
+
 
 def formatting_alpaca_chinese_func(example):
-    return f"{DEFINE_BOS_TOKEN} ###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
-    # # example['text']=
-    # return example
+    return f"###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"

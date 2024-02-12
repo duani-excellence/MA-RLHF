@@ -53,7 +53,7 @@ def create_model_tokenizer(name):
         model_name, quantization_config=bnb_config, device_map=device_map, num_labels=1
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, model_max_length=seq_length)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
@@ -176,19 +176,20 @@ def train():
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         num_train_epochs=num_train_epochs,
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=2,
         gradient_checkpointing=True,
         learning_rate=2e-5,
         report_to="wandb",
-        warmup_ratio=0.05,
+        warmup_ratio=0.01,
         remove_unused_columns=True,
         optim="adamw_torch",
         logging_steps=1,
-        evaluation_strategy="no",
         max_length=seq_length,
         deepspeed=deepspeed_config_name,
         bf16=True,
         lr_scheduler_type='cosine',
+        evaluation_strategy="steps",
+        eval_steps=100,
         # max_steps=10,
     )
 
