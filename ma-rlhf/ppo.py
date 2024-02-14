@@ -137,7 +137,7 @@ def train():
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
-        "forced_eos_token_id": True,
+        # "forced_eos_token_id": True,
     }
     output_length_sampler = LengthSampler(128, output_max_length)
 
@@ -183,23 +183,6 @@ def train():
         batch["response"] = tokenizer.batch_decode(response_tensors, skip_special_tokens=True)
 
         texts = [q + r for q, r in zip(batch["query"], batch["response"])]
-        # calculate Rewards with MARL
-        # https://huggingface.co/docs/trl/multi_adapter_rl
-        # trl/examples/scripts/ppo_multi_adapter.py
-        # inputs = tokenizer(texts, padding=True, truncation=True, return_tensors="pt").to(
-        #     trainer.accelerator.device
-        # )
-        # # raw_rewards = trainer.accelerator.unwrap_model(trainer.model).compute_reward_score(**inputs)
-        # raw_rewards = trainer.accelerator.unwrap_model(trainer.model).compute_reward_score(**inputs)
-        # # raw_rewards = trainer.model.compute_reward_score(**inputs)
-
-
-        # # raw_rewards = trainer.compute_reward_score(**inputs)
-        # rewards = [raw_rewards[i, -1, 0]  for i in range(len(raw_rewards))]  # take last token
-        # # rewards = [torch.tensor(output[0]["score"] - script_args.reward_baseline) for output in pipe_outputs]
-        # print('【original】:', rewards)
-
-        # one-by-one rewards
         rm_model = trainer.accelerator.unwrap_model(trainer.model)
         raw_rewards = []
         for text in texts:

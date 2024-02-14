@@ -186,7 +186,7 @@ def format_prompt_answer(question, answer):
 
 
 def format_prompt(question):
-    return f"###Question: {question}\n###Answer: "
+    return f"\n\n###Question: {question}\n\n###Answer: "
 
 
 # medical finetune data haven't 'input', only has 'instruction'
