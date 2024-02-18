@@ -1,9 +1,11 @@
+import os
 from datasets import load_dataset, load_from_disk
 from trl import RewardTrainer, RewardConfig
 import re
 import torch
 import evaluate
 from accelerate import Accelerator
+import numpy as np
 from utils import (
     create_peft_reward_model,
     ScriptArguments,
@@ -15,6 +17,8 @@ from transformers import (
     HfArgumentParser,
     AutoModelForSequenceClassification,
 )
+os.environ["WANDB_PROJECT"] = "ma-rlhf"
+os.environ["WANDB_RUN_NAME"] = "reward_model"
 
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
@@ -28,6 +32,7 @@ output_name = train_args.output_name
 is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
 num_train_epochs = train_args.num_train_epochs
+gradient_accumulation_steps = train_args.gradient_accumulation_steps
 
 
 accuracy = evaluate.load("accuracy")
@@ -79,11 +84,11 @@ def preprocess_function(examples):
         examples["question"], examples["response_chosen"], examples["response_rejected"]
     ):
         tokenized_j = tokenizer(
-            f"###Question:{question}\n###Answer:{response_j}{tokenizer.eos_token}",
+            f"### Question: {question}\n### Answer:{response_j} {tokenizer.eos_token}",
             truncation=True,
         )
         tokenized_k = tokenizer(
-            f"###Question:{question}\n###Answer:{response_k}{tokenizer.eos_token}",
+            f"### Question: {question}\n### Answer:{response_k} {tokenizer.eos_token}",
             truncation=True,
         )
 
@@ -106,17 +111,19 @@ def preprocess_function_hhrlhf(examples):
     }
     for prompt_chosen, prompt_rejected in zip(examples["chosen"], examples["rejected"]):
 
-        prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
-        prompt_chosen = re.sub(r'Assistant:', '\n###Answer:', prompt_chosen)
-        prompt_rejected = re.sub(r'Human:', '###Question:', prompt_rejected)
-        prompt_rejected = re.sub(r'Assistant:', '\n###Answer:', prompt_rejected)
+        prompt_chosen = re.sub(r'\n\nHuman:', '\n### Question:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_chosen)
+        prompt_chosen = prompt_chosen[1:] # ignore first \n
+        prompt_rejected = re.sub(r'\n\nHuman:', '\n### Question:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_rejected)
+        prompt_rejected = prompt_rejected[1:] # ignore first \n
 
         tokenized_j = tokenizer(
-            f"{prompt_chosen}{tokenizer.eos_token}",
+            f"{prompt_chosen} {tokenizer.eos_token}",
             truncation=True,
         )
         tokenized_k = tokenizer(
-            f"{prompt_rejected}{tokenizer.eos_token}",
+            f"{prompt_rejected} {tokenizer.eos_token}",
             truncation=True,
         )
 
@@ -131,8 +138,6 @@ def preprocess_function_hhrlhf(examples):
 def create_reward_model_datasets(datasets_name, dataset_sub_name, tokenizer):
     train_dataset = load_dataset(datasets_name, split='train')
     eval_dataset = load_dataset(datasets_name, split='test')
-    # print(train_dataset)
-    # print(eval_dataset)
 
     train_dataset = train_dataset.map(
         preprocess_function_hhrlhf,
@@ -176,9 +181,9 @@ def train():
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         num_train_epochs=num_train_epochs,
-        gradient_accumulation_steps=2,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         gradient_checkpointing=True,
-        learning_rate=2e-5,
+        learning_rate=1e-5,
         report_to="wandb",
         warmup_ratio=0.01,
         remove_unused_columns=True,

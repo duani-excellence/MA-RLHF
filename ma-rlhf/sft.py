@@ -1,10 +1,16 @@
+import os
 import torch
-from datasets import load_dataset, load_from_disk
+from datasets import load_dataset, load_from_disk, concatenate_datasets, DatasetDict
 from trl import SFTTrainer
 from trl.trainer import ConstantLengthDataset
 from accelerate import Accelerator
 from peft import LoraConfig
+import random
+import re
+random.seed(0)
 
+os.environ["WANDB_PROJECT"] = "ma-rlhf"
+os.environ["WANDB_RUN_NAME"] = "sft"
 
 from transformers import (
     AutoModelForCausalLM,
@@ -16,10 +22,8 @@ from transformers import (
 from utils import (
     ScriptArguments,
     DEFINE_EOS_TOKEN,
-    formatting_finetune_func,
-    formatting_reward_func,
     formatting_alpaca_func,
-    formatting_alpaca_chinese_func,
+    is_main_process,
 )
 
 parser = HfArgumentParser(ScriptArguments)
@@ -38,10 +42,43 @@ num_train_epochs = train_args.num_train_epochs
 
 
 def create_datasets(dataset_name, dataset_sub_name):
-    # print(dataset_name)
-    # print(dataset_sub_name)
     dataset = load_dataset(dataset_name)
-    # print(len(dataset['text']))
+
+    # merge two data
+    is_merge_datasets = False
+    if is_merge_datasets:
+        # dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train')
+        dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train[:50000]')
+        def format_hhrlhf_to_alpaca(example):
+            '''
+            alpaca format : {instruction}, {input}, {output}
+            hh rlhf format : {chosen}, {rejected}
+                chosen: \n\nHuman: 11\n\nAssistant: 22 \n\nHuman: 33\n\nAssistant: 44
+            target format is
+                chosen: \n### Question: 11\n### Answer: 22 \n### Question 33\n### Answer: 44
+                -> instruction: 【11\n### Answer: 22 \n### Question 33】
+                -> output: 【 44】
+            '''
+            text = example["chosen"]
+            text = re.sub(r'\n\nHuman:', '\n### Question:', text)
+            text = re.sub(r'\n\nAssistant:', '\n### Answer:', text)
+            text = text[1:]
+
+            instruction = text.rsplit('\n### Answer:',1)[0]
+            instruction = instruction.split('### Question:',1)[1]
+            output = text.rsplit('\n### Answer:',1)[1]
+
+            example['input'] = ''
+            example['output'] = output
+            example['instruction'] = instruction
+
+            return example
+
+        dataset_hhrlhf = dataset_hhrlhf.map(format_hhrlhf_to_alpaca, num_proc=8, remove_columns = ["chosen", "rejected"])
+        dataset = concatenate_datasets([dataset['train'], dataset_hhrlhf])
+        dataset = DatasetDict({'train': dataset})
+        dataset = dataset.shuffle(seed=42)
+
     return dataset, None
 
 
@@ -50,23 +87,20 @@ def create_model_tokenizer(name):
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
     )
-
     device_map = {"": Accelerator().local_process_index}
-    print('device map: ', device_map)
-
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=bnb_config,
         device_map=device_map,
-        # torch_dtype=torch.bfloat16,
         use_flash_attention_2=True, # gpt 2 not support flash attention2
         trust_remote_code=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.eos_token = DEFINE_EOS_TOKEN
 
     return model, tokenizer
-
 
 def create_peft(peft_flag):
     if peft_flag == False:
@@ -78,6 +112,7 @@ def create_peft(peft_flag):
             bias="none",
             task_type="CAUSAL_LM",
             # target_modules=["W_pack"],
+            # target_modules = ["q_proj", "v_proj", "k_proj", "o_proj", "down_proj", "gate_proj", "v_proj"]
         )
         return peft_config
 
@@ -91,24 +126,14 @@ def create_sft_datasets(datasets, tokenizer, format_func, seq_length=512):
         formatting_func=format_func,
         infinite=True,
         seq_length=seq_length,
+        shuffle=True,
     )
 
     return train_dataset, None
 
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
-
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.eos_token = DEFINE_EOS_TOKEN
     datasets, _ = create_datasets(dataset_name, dataset_sub_name)
-
-    # format_fun = None
-    # if dataset_sub_name == 'finetune':
-    #     format_fun = formatting_finetune_func
-    # elif dataset_sub_name == 'reward':
-    #     format_fun = formatting_reward_func
-    # else:
-    #     format_fun = None
     format_fun = formatting_alpaca_func
     train_datasets, _ = create_sft_datasets(datasets, tokenizer, format_fun, seq_length)
 
@@ -141,13 +166,10 @@ def train():
         peft_config=peft_config,
         packing=True,
         tokenizer=tokenizer,
-        # formatting_func=formatting_alpaca_func,
     )
-    trainer.model.print_trainable_parameters()
     trainer.train()
     trainer.save_model(output_name)
 
 
 if __name__ == "__main__":
-    # with torch.autocast("cuda"):
     train()

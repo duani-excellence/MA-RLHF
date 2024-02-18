@@ -33,6 +33,8 @@ is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
 num_train_epochs = train_args.num_train_epochs
 beta = 0.1 # default
+gradient_accumulation_steps = train_args.gradient_accumulation_steps
+
 
 
 accuracy = evaluate.load("accuracy")
@@ -56,20 +58,22 @@ def create_model_tokenizer(name):
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name, quantization_config=bnb_config, device_map=device_map,
+        trust_remote_code=True,
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, model_max_length=seq_length)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, model_max_length=seq_length,
+        trust_remote_code=True,)
 
-    tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
+    tokenizer.pad_token = tokenizer.eos_token
     model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-tokenizer.pad_token = tokenizer.eos_token
 tokenizer.eos_token = DEFINE_EOS_TOKEN
+tokenizer.pad_token = tokenizer.eos_token
 
 
 # Anthropic/hh-rlhf
@@ -81,24 +85,24 @@ def preprocess_function_hhrlhf(examples):
         "rejected": [],
     }
 
-
     for prompt_chosen, prompt_rejected in zip(
         examples["chosen"], examples["rejected"]
     ):
+        prompt_chosen = re.sub(r'\n\nHuman:', '\n### Question:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_chosen)
+        prompt_chosen = prompt_chosen[1:] # ignore first \n
+        prompt_rejected = re.sub(r'\n\nHuman:', '\n### Question:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_rejected)
+        prompt_rejected = prompt_rejected[1:] # ignore first \n
 
-        prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
-        prompt_chosen = re.sub(r'Assistant:', '\n###Answer:', prompt_chosen)
-        prompt_rejected = re.sub(r'Human:', '###Question:', prompt_rejected)
-        prompt_rejected = re.sub(r'Assistant:', '\n###Answer:', prompt_rejected)
-
-        prompt_question = prompt_chosen.split('\n###Answer:',1)[0] + '\n###Answer:'
-        response_chosen = prompt_chosen.split('\n###Answer:',1)[1] + DEFINE_EOS_TOKEN
-        response_rejected = prompt_rejected.split('\n###Answer:',1)[1] + DEFINE_EOS_TOKEN
+        prompt_question = prompt_chosen.rsplit('\n### Answer:',1)[0] + '\n### Answer:'
+        response_chosen = prompt_chosen.rsplit('\n### Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+        response_rejected = prompt_rejected.rsplit('\n### Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+        # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
 
         new_examples['prompt'].append(prompt_question)
         new_examples['chosen'].append(response_chosen)
         new_examples['rejected'].append(response_rejected)
-
 
     return new_examples
 
@@ -113,12 +117,10 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
         num_proc=16,
     )
 
-    # torch.distributed.barrier()
     train_dataset = train_dataset.filter(
         lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
         and len(x["prompt"]) + len(x["rejected"]) <= seq_length
     )
-    # torch.distributed.barrier()
 
     eval_dataset = eval_dataset.map(
         preprocess_function_hhrlhf,
@@ -126,13 +128,10 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
         num_proc=16,
     )
 
-    # torch.distributed.barrier()
     eval_dataset = eval_dataset.filter(
         lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
         and len(x["prompt"]) + len(x["rejected"]) <= seq_length
     )
-
-    # torch.distributed.barrier()
 
     return train_dataset, eval_dataset
 
@@ -158,7 +157,7 @@ def train():
         warmup_ratio=0.05,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
@@ -178,7 +177,6 @@ def train():
         max_length=seq_length,
         max_target_length=output_max_length,
     )
-
 
     trainer.train()
     trainer.save_model(output_name)

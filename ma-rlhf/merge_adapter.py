@@ -15,9 +15,9 @@ def merge(model_base_name, model_adapter_name, model_merge_name):
     # use cpu avoid gpu vram OOM
     # if cpu memory small, use swap
     model = AutoModelForCausalLM.from_pretrained(
-        model_base_name, device_map='cpu', torch_dtype=torch.bfloat16, trust_remote_code=True, # llama-7b base
+        model_base_name, device_map='auto', torch_dtype=torch.bfloat16, trust_remote_code=True, # llama-7b base
     )
-    print(model)
+    print('load base model')
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_base_name,
@@ -27,16 +27,19 @@ def merge(model_base_name, model_adapter_name, model_merge_name):
     model = PeftModel.from_pretrained(
         model,
         model_adapter_name,  # adapter
-        device_map='cpu',
+        device_map='auto',
         trust_remote_code=True,
     )
-    print(model)
+    # print(model)
+    print('load lora')
 
     model = model.merge_and_unload()
-    print(model)
+    print('merge base model + lora model finish')
+    # print(model)
 
     model.save_pretrained(model_merge_name)
     tokenizer.save_pretrained(model_merge_name)
+    print('save model finish')
 
 
 if __name__ == "__main__":

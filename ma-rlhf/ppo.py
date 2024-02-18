@@ -1,5 +1,6 @@
 import re
 import torch
+import os
 from datasets import load_dataset, load_from_disk
 from trl import AutoModelForCausalLMWithValueHead, PPOTrainer, PPOConfig
 from trl.core import LengthSampler
@@ -13,8 +14,11 @@ from utils import (
     DEFINE_EOS_TOKEN,
 )
 
-# class MyPPOTrainer(PPOTrainer):
+os.environ["WANDB_PROJECT"] = "ma-rlhf"
+os.environ["WANDB_RUN_NAME"] = "ppo"
 
+
+# class MyPPOTrainer(PPOTrainer):
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
 
@@ -68,14 +72,14 @@ def create_dataset(dataset_name, tokenizer):
 
     datasets = load_dataset(dataset_name, split='train')
 
-    # template: ###Question: {question}\n ###Answer: {response_j}{tokenizer.eos_token}
+    # template: ### Question: {question}\n ### Answer: {response_j}{tokenizer.eos_token}
     def preprocess_function(examples):
         new_examples = {
             "query": [],
             "input_ids": [],
         }
         for question in examples["question"]:
-            query = f"###Question:{question}\n###Answer:"
+            query = f"### Question:{question}\n### Answer:"
             tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
             new_examples["query"].append(query)
             new_examples["input_ids"].append(tokenized_question["input_ids"][0])
@@ -89,10 +93,11 @@ def create_dataset(dataset_name, tokenizer):
         for prompt_chosen in examples["chosen"]:
 
             # format hh-rlhf dataset for PPO
-            prompt_chosen = prompt_chosen.rsplit('Assistant:',1)[0]
-            prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
-            prompt_chosen = re.sub(r'Assistant:', '###Answer:', prompt_chosen)
-            query = prompt_chosen + '###Answer:'
+            prompt_chosen = re.sub(r'\n\nHuman:', '\n### Question:', prompt_chosen)
+            prompt_chosen = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_chosen)
+            prompt_chosen = prompt_chosen.rsplit('\n### Answer:',1)[0]
+            prompt_chosen = prompt_chosen[1:] # skip first \n
+            query = prompt_chosen + '\n### Answer:'
 
             # TODO:truncation Answer Process
             tokenized_question = tokenizer(query, return_tensors='pt')
@@ -131,19 +136,19 @@ def train():
 
     # generation config
     generation_kwargs = {
-        "top_k": 50,
-        "top_p": 0.95,
-        "temperature": 1.2,
+        "min_length": -1,
+        "top_k": 0.0,
+        "top_p": 1.0,
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
-        # "forced_eos_token_id": True,
+        "forced_eos_token_id": True,
     }
     output_length_sampler = LengthSampler(128, output_max_length)
 
     config = PPOConfig(
         log_with='wandb',
-        learning_rate=2e-5,
+        learning_rate=1e-5,
         batch_size=batch_size,
         mini_batch_size=mini_batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
@@ -187,7 +192,7 @@ def train():
         raw_rewards = []
         for text in texts:
             inputs = tokenizer(text, return_tensors='pt').to(trainer.accelerator.device)
-            score = rm_model.compute_reward_score(**inputs)[0,-1,0]
+            score = rm_model.compute_reward_score(**inputs)[0,-1,0] - reward_baseline
             raw_rewards.append(score)
         rewards = raw_rewards
 
@@ -196,8 +201,11 @@ def train():
         trainer.log_stats(stats, batch, rewards)
 
         if is_main_process():
-            print(texts[0])
-            print(rewards)
+            for text, reward in zip(texts, rewards):
+                print('-----------------------------------')
+                print(text)
+                print(reward.item())
+                print('-----------------------------------')
             print(f"step:{epoch}/all:{len(trainer.dataloader)},loss:{stats['ppo/loss/total']},mean_scores:{stats['ppo/mean_scores']}" )
 
         if save_freq and epoch and epoch % save_freq == 0:
