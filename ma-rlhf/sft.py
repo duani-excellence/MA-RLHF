@@ -36,10 +36,11 @@ seq_length = train_args.seq_length
 batch_size = train_args.batch_size
 output_name = train_args.output_name
 is_peft = train_args.use_QLora
-is_use_flash_attention2 = train_args.use_flash_attention_2
+use_flash_attention_2 = train_args.use_flash_attention_2
 dataset_sub_name = None
 num_train_epochs = train_args.num_train_epochs
-
+gradient_accumulation_steps = train_args.gradient_accumulation_steps
+learning_rate = train_args.learning_rate
 
 def create_datasets(dataset_name, dataset_sub_name):
     dataset = load_dataset(dataset_name)
@@ -55,18 +56,18 @@ def create_datasets(dataset_name, dataset_sub_name):
             hh rlhf format : {chosen}, {rejected}
                 chosen: \n\nHuman: 11\n\nAssistant: 22 \n\nHuman: 33\n\nAssistant: 44
             target format is
-                chosen: \n### Question: 11\n### Answer: 22 \n### Question 33\n### Answer: 44
-                -> instruction: 【11\n### Answer: 22 \n### Question 33】
+                chosen: \n###Question: 11\n###Answer: 22 \n### Question 33\n###Answer: 44
+                -> instruction: 【11\n###Answer: 22 \n### Question 33】
                 -> output: 【 44】
             '''
             text = example["chosen"]
-            text = re.sub(r'\n\nHuman:', '\n### Question:', text)
-            text = re.sub(r'\n\nAssistant:', '\n### Answer:', text)
+            text = re.sub(r'\n\nHuman:', '\n###Question:', text)
+            text = re.sub(r'\n\nAssistant:', '\n###Answer:', text)
             text = text[1:]
 
-            instruction = text.rsplit('\n### Answer:',1)[0]
-            instruction = instruction.split('### Question:',1)[1]
-            output = text.rsplit('\n### Answer:',1)[1]
+            instruction = text.rsplit('\n###Answer:',1)[0]
+            instruction = instruction.split('###Question:',1)[1]
+            output = text.rsplit('\n###Answer:',1)[1]
 
             example['input'] = ''
             example['output'] = output
@@ -92,11 +93,11 @@ def create_model_tokenizer(name):
         model_name,
         quantization_config=bnb_config,
         device_map=device_map,
-        use_flash_attention_2=True, # gpt 2 not support flash attention2
+        use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
         trust_remote_code=True,
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, left_padding='left' )
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
 
@@ -147,11 +148,11 @@ def train():
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
-        learning_rate=2e-5,
+        learning_rate=learning_rate,
         warmup_ratio=0.03,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',

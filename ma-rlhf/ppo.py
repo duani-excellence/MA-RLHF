@@ -12,6 +12,7 @@ from utils import (
     is_main_process,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    format_prompt,
 )
 
 os.environ["WANDB_PROJECT"] = "ma-rlhf"
@@ -72,15 +73,14 @@ def create_dataset(dataset_name, tokenizer):
 
     datasets = load_dataset(dataset_name, split='train')
 
-    # template: ### Question: {question}\n ### Answer: {response_j}{tokenizer.eos_token}
     def preprocess_function(examples):
         new_examples = {
             "query": [],
             "input_ids": [],
         }
-        for question in examples["question"]:
-            query = f"### Question:{question}\n### Answer:"
-            tokenized_question = tokenizer(query, truncation=True, return_tensors='pt')
+        for question in examples["prompt"]:
+            query = format_prompt(question)
+            tokenized_question = tokenizer(query, return_tensors='pt')
             new_examples["query"].append(query)
             new_examples["input_ids"].append(tokenized_question["input_ids"][0])
         return new_examples
@@ -93,11 +93,11 @@ def create_dataset(dataset_name, tokenizer):
         for prompt_chosen in examples["chosen"]:
 
             # format hh-rlhf dataset for PPO
-            prompt_chosen = re.sub(r'\n\nHuman:', '\n### Question:', prompt_chosen)
-            prompt_chosen = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_chosen)
-            prompt_chosen = prompt_chosen.rsplit('\n### Answer:',1)[0]
+            prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
+            prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
+            prompt_chosen = prompt_chosen.rsplit('\n###Answer:',1)[0]
             prompt_chosen = prompt_chosen[1:] # skip first \n
-            query = prompt_chosen + '\n### Answer:'
+            query = prompt_chosen + '\n###Answer:'
 
             # TODO:truncation Answer Process
             tokenized_question = tokenizer(query, return_tensors='pt')
@@ -105,9 +105,14 @@ def create_dataset(dataset_name, tokenizer):
             new_examples["input_ids"].append(tokenized_question["input_ids"][0])
         return new_examples
 
+    func = None
+    if dataset_name == 'Anthropic/hh-rlhf':
+        func = preprocess_function_hhrlhf
+    elif dataset_name == 'PKU-Alignment/PKU-SafeRLHF-10K':
+        func = preprocess_function
 
     datasets = datasets.map(
-        preprocess_function_hhrlhf,
+        func,
         batched=True,
         num_proc=8,
         remove_columns=datasets.column_names,
@@ -137,6 +142,7 @@ def train():
     # generation config
     generation_kwargs = {
         "min_length": -1,
+        "max_new_tokens": output_max_length,
         "top_k": 0.0,
         "top_p": 1.0,
         "do_sample": True,
@@ -182,7 +188,7 @@ def train():
         response_tensors = trainer.generate(
             question_tensors,
             return_prompt=False,
-            length_sampler=output_length_sampler,
+            # length_sampler=output_length_sampler,
             **generation_kwargs,
         )
         batch["response"] = tokenizer.batch_decode(response_tensors, skip_special_tokens=True)

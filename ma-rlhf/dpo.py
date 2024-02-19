@@ -34,7 +34,7 @@ is_use_flash_attention2 = train_args.use_flash_attention_2
 num_train_epochs = train_args.num_train_epochs
 beta = 0.1 # default
 gradient_accumulation_steps = train_args.gradient_accumulation_steps
-
+learning_rate = train_args.learning_rate
 
 
 accuracy = evaluate.load("accuracy")
@@ -88,16 +88,16 @@ def preprocess_function_hhrlhf(examples):
     for prompt_chosen, prompt_rejected in zip(
         examples["chosen"], examples["rejected"]
     ):
-        prompt_chosen = re.sub(r'\n\nHuman:', '\n### Question:', prompt_chosen)
-        prompt_chosen = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
         prompt_chosen = prompt_chosen[1:] # ignore first \n
-        prompt_rejected = re.sub(r'\n\nHuman:', '\n### Question:', prompt_rejected)
-        prompt_rejected = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
         prompt_rejected = prompt_rejected[1:] # ignore first \n
 
-        prompt_question = prompt_chosen.rsplit('\n### Answer:',1)[0] + '\n### Answer:'
-        response_chosen = prompt_chosen.rsplit('\n### Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-        response_rejected = prompt_rejected.rsplit('\n### Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+        prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
+        response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+        response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
         # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
 
         new_examples['prompt'].append(prompt_question)
@@ -153,7 +153,7 @@ def train():
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
-        learning_rate=2e-5,
+        learning_rate=learning_rate,
         warmup_ratio=0.05,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,

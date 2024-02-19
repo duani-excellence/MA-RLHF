@@ -1,5 +1,6 @@
 # from transformer import
 
+from numpy import False_
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
 from utils import ScriptArguments, format_prompt
 import torch
@@ -25,7 +26,7 @@ model.config.eos_token_id = tokenizer.eos_token_id
 
 input = format_prompt(instruction)
 inputs = tokenizer(input, return_tensors='pt').to(device)
-output = model.generate(inputs['input_ids'], max_new_tokens=max_new_tokens)
+output = model.generate(inputs['input_ids'], max_new_tokens=max_new_tokens, do_sample=False, top_p=1)
 output = tokenizer.decode(output[0], skip_special_tokens=True)
 
 print(output)

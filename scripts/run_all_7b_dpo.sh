@@ -2,7 +2,7 @@
 
 base_model_path='meta-llama/Llama-2-7b-hf'
 deepspeed_config_name=./config/ds.json
-output_path='./output'
+output_path='./output/dpo'
 
 model_pretrained_lora_path=${output_path}'/pretrained_lora'
 model_pretrained_full_path=${output_path}'/pretrained_full'
@@ -32,7 +32,9 @@ deepspeed ./ma-rlhf/sft.py \
 	--batch_size=16 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=1
+	--num_train_epochs=2 \
+	--gradient_accumulation_steps=4 \
+	--learning_rate=5e-5
 
 
 # merge SFT
@@ -53,9 +55,10 @@ deepspeed ./ma-rlhf/dpo.py \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--batch_size=16 \
-	--num_train_epochs=1 \
+	--num_train_epochs=2 \
 	--seq_length=512 \
-	--gradient_accumulation_steps=4
+	--gradient_accumulation_steps=4 \
+	--learning_rate=5e-5
 
 
 # # merge DPO

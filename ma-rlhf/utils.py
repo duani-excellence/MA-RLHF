@@ -55,6 +55,7 @@ def create_peft(peft_flag: bool = False) -> LoraConfig:
             r=32,
             lora_alpha=8,
             bias="none",
+            lora_dropout=0.05,
             task_type="CAUSAL_LM",
         )
         return peft_config
@@ -71,6 +72,7 @@ def create_peft_reward_model(peft_flag: bool = False) -> LoraConfig:
             r=32,
             lora_alpha=8,
             bias="none",
+            lora_dropout=0.05,
             modules_to_save=["scores"],
         )
         return peft_config
@@ -186,35 +188,35 @@ class ScriptArguments:
 
 def format_prompt_answer(question, answer):
     '''for generation'''
-    return f"### Question: {question}\n### Answer: {answer} {DEFINE_EOS_TOKEN}"
+    return f"###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
 
 
 def format_prompt(question):
-    return f"### Question: {question}\n### Answer: "
+    return f"###Question: {question}\n###Answer: "
 
 
 # medical finetune data haven't 'input', only has 'instruction'
 def formatting_finetune_func(example):
-    text = f"### Question: {example['instruction']}\n### Answer: {example['output']} {DEFINE_EOS_TOKEN}"
+    text = f"###Question: {example['instruction']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
     return text
 
 
 def formatting_reward_func(example):
-    text = f"### Question: {example['question']}\n### Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
+    text = f"###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
     return text
 
 
 def formatting_alpaca_func(example):
-    return f"### Question: {example['instruction']} {example['input']}\n### Answer: {example['output']} {DEFINE_EOS_TOKEN}"
+    return f"###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
 
 
 def formatting_alpaca_chinese_func(example):
-    return f"### Question: {example['instruction_zh']} {example['input_zh']}\n### Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
+    return f"###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
 
 def formatting_hhrlhf_func(example):
     random_int = random.randint(0, 1)
     random_choice = bool(random_int)
     text = example["chosen"] if random_choice == True else example["rejected"]
-    text = re.sub(r'\n\nHuman:', '\n### Question:', text)
-    text = re.sub(r'\n\nAssistant:', '\n### Answer:', text)
+    text = re.sub(r'\n\nHuman:', '\n###Question:', text)
+    text = re.sub(r'\n\nAssistant:', '\n###Answer:', text)
     text = text[1:] + ' ' + {DEFINE_EOS_TOKEN}

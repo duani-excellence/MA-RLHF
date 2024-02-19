@@ -33,7 +33,7 @@ is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
 num_train_epochs = train_args.num_train_epochs
 gradient_accumulation_steps = train_args.gradient_accumulation_steps
-
+learning_rate = train_args.learning_rate
 
 accuracy = evaluate.load("accuracy")
 def compute_metrics(eval_pred):
@@ -84,11 +84,11 @@ def preprocess_function(examples):
         examples["question"], examples["response_chosen"], examples["response_rejected"]
     ):
         tokenized_j = tokenizer(
-            f"### Question: {question}\n### Answer:{response_j} {tokenizer.eos_token}",
+            f"###Question: {question}\n###Answer:{response_j} {tokenizer.eos_token}",
             truncation=True,
         )
         tokenized_k = tokenizer(
-            f"### Question: {question}\n### Answer:{response_k} {tokenizer.eos_token}",
+            f"###Question: {question}\n###Answer:{response_k} {tokenizer.eos_token}",
             truncation=True,
         )
 
@@ -111,11 +111,11 @@ def preprocess_function_hhrlhf(examples):
     }
     for prompt_chosen, prompt_rejected in zip(examples["chosen"], examples["rejected"]):
 
-        prompt_chosen = re.sub(r'\n\nHuman:', '\n### Question:', prompt_chosen)
-        prompt_chosen = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
         prompt_chosen = prompt_chosen[1:] # ignore first \n
-        prompt_rejected = re.sub(r'\n\nHuman:', '\n### Question:', prompt_rejected)
-        prompt_rejected = re.sub(r'\n\nAssistant:', '\n### Answer:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
         prompt_rejected = prompt_rejected[1:] # ignore first \n
 
         tokenized_j = tokenizer(
@@ -183,7 +183,7 @@ def train():
         num_train_epochs=num_train_epochs,
         gradient_accumulation_steps=gradient_accumulation_steps,
         gradient_checkpointing=True,
-        learning_rate=1e-5,
+        learning_rate=learning_rate,
         report_to="wandb",
         warmup_ratio=0.01,
         remove_unused_columns=True,
