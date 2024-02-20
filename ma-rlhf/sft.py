@@ -7,7 +7,7 @@ from accelerate import Accelerator
 from peft import LoraConfig
 import random
 import re
-random.seed(0)
+random.seed(42)
 
 os.environ["WANDB_PROJECT"] = "ma-rlhf"
 os.environ["WANDB_RUN_NAME"] = "sft"
@@ -24,6 +24,7 @@ from utils import (
     DEFINE_EOS_TOKEN,
     formatting_alpaca_func,
     is_main_process,
+    create_peft,
 )
 
 parser = HfArgumentParser(ScriptArguments)
@@ -48,8 +49,8 @@ def create_datasets(dataset_name, dataset_sub_name):
     # merge two data
     is_merge_datasets = False
     if is_merge_datasets:
-        # dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train')
-        dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train[:50000]')
+        dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train')
+        # dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train[:50000]')
         def format_hhrlhf_to_alpaca(example):
             '''
             alpaca format : {instruction}, {input}, {output}
@@ -97,25 +98,15 @@ def create_model_tokenizer(name):
         trust_remote_code=True,
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, left_padding='left' )
+    tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                                trust_remote_code=True,
+                                                # padding_side='left',
+                                                # model_max_length=1024
+                                                )
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
 
     return model, tokenizer
-
-def create_peft(peft_flag):
-    if peft_flag == False:
-        return None
-    else:
-        peft_config = LoraConfig(
-            r=32,
-            lora_alpha=8,
-            bias="none",
-            task_type="CAUSAL_LM",
-            # target_modules=["W_pack"],
-            # target_modules = ["q_proj", "v_proj", "k_proj", "o_proj", "down_proj", "gate_proj", "v_proj"]
-        )
-        return peft_config
 
 
 def create_sft_datasets(datasets, tokenizer, format_func, seq_length=512):
@@ -167,6 +158,7 @@ def train():
         peft_config=peft_config,
         packing=True,
         tokenizer=tokenizer,
+        # formatting_func=format_fun,
     )
     trainer.train()
     trainer.save_model(output_name)

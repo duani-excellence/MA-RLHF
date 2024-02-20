@@ -17,6 +17,7 @@ from transformers import (
 
 DEFINE_EOS_TOKEN = '''</s>'''
 DEFINE_BOS_TOKEN = '''<s>'''
+SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
 
 
 
@@ -55,7 +56,7 @@ def create_peft(peft_flag: bool = False) -> LoraConfig:
             r=32,
             lora_alpha=8,
             bias="none",
-            lora_dropout=0.05,
+            # lora_dropout=0.05,
             task_type="CAUSAL_LM",
         )
         return peft_config
@@ -72,7 +73,7 @@ def create_peft_reward_model(peft_flag: bool = False) -> LoraConfig:
             r=32,
             lora_alpha=8,
             bias="none",
-            lora_dropout=0.05,
+            # lora_dropout=0.05,
             modules_to_save=["scores"],
         )
         return peft_config
