@@ -100,6 +100,57 @@ def preprocess_function(examples):
     return new_examples
 
 
+
+def preprocess_function_safe_rlhf(examples):
+    '''
+    reference: https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-10K
+    '''
+    new_examples = {
+        "input_ids_chosen": [],
+        "attention_mask_chosen": [],
+        "input_ids_rejected": [],
+        "attention_mask_rejected": [],
+    }
+    for question, response_0, response_1, safe_0, safe_1, better_id, safer_id in zip(
+        examples["prompt"], examples["response_0"], examples["response_1"],
+        examples['is_response_0_safe'], examples['is_response_1_safe'],
+        examples['better_response_id'], examples['safer_response_id'],
+    ):
+        response_chosen = None
+        response_rejected = None
+
+        if safe_0 == True and safe_1 == True :
+            response_chosen = response_0 if better_id == 0 else response_1
+            response_rejected = response_1 if better_id == 0 else response_0
+        elif safe_0 == True and safe_1 == False:
+            response_chosen = response_0
+            response_rejected = response_1
+        elif safe_0 == False and safe_1 == True:
+            response_chosen = response_1
+            response_rejected = response_0
+        elif safe_0 == False and safe_1 == False: # TODO should filter both unsafe examples
+            response_chosen = response_0 if better_id == 0 else response_1
+            response_rejected = response_1 if better_id == 0 else response_0
+
+
+        tokenized_chosen = tokenizer(
+            f"###Question: {question}\n###Answer:{response_chosen} {tokenizer.eos_token}",
+            truncation=True,
+        )
+        tokenized_rejected = tokenizer(
+            f"###Question: {question}\n###Answer:{response_rejected} {tokenizer.eos_token}",
+            truncation=True,
+        )
+
+        new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
+        new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
+        new_examples["input_ids_rejected"].append(tokenized_rejected["input_ids"])
+        new_examples["attention_mask_rejected"].append(tokenized_rejected["attention_mask"])
+
+    return new_examples
+
+
+
 # Anthropic/hh-rlhf
 # chosen, rejected
 def preprocess_function_hhrlhf(examples):
@@ -137,10 +188,19 @@ def preprocess_function_hhrlhf(examples):
 
 def create_reward_model_datasets(datasets_name, dataset_sub_name, tokenizer):
     train_dataset = load_dataset(datasets_name, split='train')
-    eval_dataset = load_dataset(datasets_name, split='test')
+    # eval_dataset = load_dataset(datasets_name, split='test')
+
+    func = None
+    if 'hh-rlhf' in dataset_name:
+        func = preprocess_function_hhrlhf
+    elif 'SafeRLHF' in dataset_name:
+        func = preprocess_function_safe_rlhf
+    else:
+        func = preprocess_function
+
 
     train_dataset = train_dataset.map(
-        preprocess_function_hhrlhf,
+        func,
         batched=True,
         num_proc=8,
     )
@@ -152,21 +212,22 @@ def create_reward_model_datasets(datasets_name, dataset_sub_name, tokenizer):
     )
     torch.distributed.barrier()
 
-    eval_dataset = eval_dataset.map(
-        preprocess_function_hhrlhf,
-        batched=True,
-        num_proc=8,
-    )
+    # eval_dataset = eval_dataset.map(
+    #     preprocess_function_hhrlhf,
+    #     batched=True,
+    #     num_proc=8,
+    # )
 
-    torch.distributed.barrier()
-    eval_dataset = eval_dataset.filter(
-        lambda x: len(x["input_ids_chosen"]) <= seq_length
-        and len(x["input_ids_rejected"]) <= seq_length
-    )
+    # torch.distributed.barrier()
+    # eval_dataset = eval_dataset.filter(
+    #     lambda x: len(x["input_ids_chosen"]) <= seq_length
+    #     and len(x["input_ids_rejected"]) <= seq_length
+    # )
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
 
-    return train_dataset, eval_dataset
+    # return train_dataset, eval_dataset
+    return train_dataset, None
 
 
 def train():
@@ -193,8 +254,9 @@ def train():
         deepspeed=deepspeed_config_name,
         bf16=True,
         lr_scheduler_type='cosine',
-        evaluation_strategy="steps",
-        eval_steps=100,
+        # evaluation_strategy="steps",
+        # eval_steps=100,
+        evaluation_strategy='no',
         # max_steps=10,
     )
 
@@ -202,7 +264,7 @@ def train():
         model,
         args=reward_config,
         train_dataset=train_datasets,
-        eval_dataset=test_datasets,
+        # eval_dataset=test_datasets,
         compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         peft_config=peft_config,
