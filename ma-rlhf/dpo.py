@@ -1,4 +1,6 @@
-from datasets import load_dataset, load_from_disk
+import os
+import numpy as np
+from datasets import load_dataset, load_from_disk, concatenate_datasets
 from trl import DPOTrainer
 import re
 import torch
@@ -18,6 +20,9 @@ from transformers import (
     AutoModelForCausalLM,
     TrainingArguments
 )
+
+os.environ["WANDB_PROJECT"] = "ma-rlhf"
+os.environ["WANDB_RUN_NAME"] = "dpo"
 
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
@@ -109,7 +114,16 @@ def preprocess_function_hhrlhf(examples):
 
 def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
     train_dataset = load_dataset(datasets_name, split='train')
+
+    # merge other datasets and shuffle
+    # train_dataset2 = load_dataset('Unified-Language-Model-Alignment/Anthropic_HH_Golden', split='train')
+    # train_dataset = concatenate_datasets([train_dataset, train_dataset2])
+    # train_dataset = train_dataset.shuffle(seed=42)
+
     eval_dataset = load_dataset(datasets_name, split='test')
+    # eval_dataset2 = load_dataset('Unified-Language-Model-Alignment/Anthropic_HH_Golden', split='test')
+    # eval_dataset = concatenate_datasets([eval_dataset, eval_dataset2])
+    # eval_dataset = eval_dataset.shuffle(seed=42)
 
     train_dataset = train_dataset.map(
         preprocess_function_hhrlhf,

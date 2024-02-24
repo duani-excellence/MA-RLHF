@@ -15,7 +15,7 @@ from transformers import (
 # parser = HfArgumentParser(ScriptArguments)
 # train_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
 
-model_name = './output/reward_model_lora'
+model_name = './output/ppo_prior/reward_model_lora'
 
 bnb_config = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
