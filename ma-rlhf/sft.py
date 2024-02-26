@@ -3,6 +3,7 @@ import torch
 from datasets import load_dataset, load_from_disk, concatenate_datasets, DatasetDict
 from trl import SFTTrainer
 from trl.trainer import ConstantLengthDataset
+from trl.trainer.utils import DataCollatorForCompletionOnlyLM
 from accelerate import Accelerator
 from peft import LoraConfig
 import random
@@ -123,11 +124,28 @@ def create_sft_datasets(datasets, tokenizer, format_func, seq_length=512):
 
     return train_dataset, None
 
+def create_collator(tokenizer):
+    '''
+    ref https://github.com/huggingface/trl/blob/main/tests/test_data_collator_completion_only.py
+    '''
+    instruction_template = "###Question: "
+    response_template = "\n###Answer: "
+
+    tokenized_instruction_w_context = tokenizer.encode(
+            instruction_template, add_special_tokens=False
+        )[2:]
+
+    tokenized_response_w_context = tokenizer.encode(response_template, add_special_tokens=False)[2:]
+
+    return DataCollatorForCompletionOnlyLM(tokenized_response_w_context, tokenized_instruction_w_context, tokenizer=tokenizer)
+
+
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
     datasets, _ = create_datasets(dataset_name, dataset_sub_name)
     format_fun = formatting_alpaca_func
     train_datasets, _ = create_sft_datasets(datasets, tokenizer, format_fun, seq_length)
+    collator = create_collator(tokenizer)
 
     # peft
     peft_config = create_peft(is_peft)
@@ -158,6 +176,7 @@ def train():
         peft_config=peft_config,
         packing=True,
         tokenizer=tokenizer,
+        # collator=collator,
         # formatting_func=format_fun,
     )
     trainer.train()
