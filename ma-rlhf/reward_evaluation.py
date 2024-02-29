@@ -1,10 +1,12 @@
+import os
 import re
 import torch
+import wandb
 import evaluate
 import numpy as np
 from datasets import load_dataset, load_from_disk
 from vllm import LLM, SamplingParams
-from vllm.lora.request import LoRARequest
+# from vllm.lora.request import LoRARequest
 from utils import ScriptArguments, format_prompt
 from peft import PeftModel
 from transformers import (
@@ -14,8 +16,8 @@ from transformers import (
     AutoModelForSequenceClassification,
 )
 
-# parser = HfArgumentParser(ScriptArguments)
-# train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
+wandb.login()
+run = wandb.init(project="ma-rlhf", name="reward_evaluation_ppo") # replace with your own task name
 
 device = 'cuda:0'
 
@@ -39,14 +41,14 @@ def load_reward_model(model_adapter_path):
 
 def create_dataset(dataset_name):
     datasets = load_dataset(dataset_name, split='test')
-
-    # template: ###Question: {question}\n ###Answer: {response_j}{tokenizer.eos_token}
-    # def preprocess_function(examples):
-    #     prompts = []
-    #     for question in examples["question"]:
-    #         query = format_prompt(question)
-    #         prompts.append(query)
-    #     return prompts
+    def preprocess_function(examples):
+        new_examples = {
+            "prompts": [],
+        }
+        for question in examples["prompt"]:
+            query = format_prompt(question)
+            new_examples["prompts"].append(query)
+        return new_examples
 
     def preprocess_function_hhrlhf(examples):
         new_examples = {
@@ -63,9 +65,14 @@ def create_dataset(dataset_name):
 
         return new_examples
 
+    func = None
+    if dataset_name == '/root/hh-rlhf':
+        func = preprocess_function_hhrlhf
+    elif dataset_name == '/root/PKU-SafeRLHF-30K':
+        func = preprocess_function
 
     datasets = datasets.map(
-        preprocess_function_hhrlhf,
+        func,
         batched=True,
         num_proc=8,
         # remove_columns=datasets.column_names,
@@ -77,7 +84,8 @@ def create_dataset(dataset_name):
 
 def evaluate_reward():
     # evaluation dataset
-    dataset = create_dataset('/root/hh-rlhf') # replace your own dataset
+    # dataset = create_dataset('/root/hh-rlhf') # replace your own dataset
+    dataset = create_dataset('/root/PKU-SafeRLHF-30K')
     print(dataset)
 
     # prompts = [
@@ -96,16 +104,13 @@ def evaluate_reward():
 
     # Create a sampling params object.
     sampling_params = SamplingParams(temperature=0.8,
-                                     top_p=0.95,
-                                     top_k=30,
                                      max_tokens=256,
                                      stop="</s>",
                                      )
     # Create LLM object
-    llm = LLM(model="./output/dpo_full", # replace your own model
+    llm = LLM(model="./output/ppo_full", # replace your own model
               tensor_parallel_size=4,  # number of gpu
-              enable_lora=True,
-              gpu_memory_utilization=0.6,  # prevent OOM
+              gpu_memory_utilization=0.8,  # prevent OOM
               )
 
     # load reward model
@@ -116,8 +121,8 @@ def evaluate_reward():
     #                        sampling_params)
     outputs = llm.generate(dataset['prompts'],
                            sampling_params,)
-                           # lora_request=LoRARequest("dpo_adapter", 2, './output/dpo_lora'))
 
+    reward_scores = []
     for output in outputs:
         prompt = output.prompt
         generated_text = output.outputs[0].text
@@ -125,8 +130,13 @@ def evaluate_reward():
         # compute reward score
         input = tokenizer(input, return_tensors='pt').to(device)
         output = reward_model(input['input_ids']).logits
+        reward_score = output[0][0].item()
+        reward_scores.append(reward_score)
+        reward_score_mean = np.mean(reward_scores)
+        reward_score_std = np.std(reward_scores)
         print(prompt + generated_text)
-        print('reward score: ', output[0][0])
+        print(f"reward_score:{reward_score}, reward_score_mean:{reward_score_mean}, reward_score_std:{reward_score_std},")
+        wandb.log({"reward_mean": reward_score_mean, "reward_std": reward_score_std})
         print('-'*32)
 
 
