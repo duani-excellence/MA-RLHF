@@ -206,6 +206,12 @@ def formatting_reward_func(example):
     text = f"###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
     return text
 
+def formatting_alpaca_func_bached(example):
+    output_text = []
+    for i, instruction in enumerate(example["instruction"]):
+        text = f"###Question: {instruction} {example['input'][i]}\n###Answer: {example['output'][i]} {DEFINE_EOS_TOKEN}"
+        output_text.append(text)
+    return output_text
 
 def formatting_alpaca_func(example):
     return f"###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"

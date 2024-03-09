@@ -24,7 +24,6 @@ from utils import (
     ScriptArguments,
     DEFINE_EOS_TOKEN,
     formatting_alpaca_func,
-    formatting_alpaca_func_bached,
     is_main_process,
     create_peft,
 )
@@ -114,35 +113,22 @@ def create_model_tokenizer(name):
 def create_sft_datasets(datasets, tokenizer, format_func, seq_length=512):
     train_dataset = datasets["train"]
 
-    # train_dataset = ConstantLengthDataset(
-    #     tokenizer,
-    #     train_dataset,
-    #     formatting_func=format_func,
-    #     infinite=True,
-    #     seq_length=seq_length,
-    #     shuffle=True,
-    # )
+    train_dataset = ConstantLengthDataset(
+        tokenizer,
+        train_dataset,
+        formatting_func=format_func,
+        infinite=True,
+        seq_length=seq_length,
+        shuffle=True,
+    )
 
     return train_dataset, None
-
-def create_collator(tokenizer):
-    '''
-    ref https://github.com/huggingface/trl/blob/main/tests/test_data_collator_completion_only.py
-    '''
-    # instruction_template = "###Question: "
-    response_template = "###Answer:"
-    response_template_id = tokenizer.encode(
-            response_template, add_special_tokens=False
-        )[1:]
-    return DataCollatorForCompletionOnlyLM(response_template_id, tokenizer=tokenizer)
-
 
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
     datasets, _ = create_datasets(dataset_name, dataset_sub_name)
-    format_fun = formatting_alpaca_func_bached # for sft collarter
+    format_fun = formatting_alpaca_func
     train_datasets, _ = create_sft_datasets(datasets, tokenizer, format_fun, seq_length)
-    collator = create_collator(tokenizer)
 
     # peft
     peft_config = create_peft(is_peft)
@@ -171,11 +157,9 @@ def train():
         train_dataset=train_datasets,
         max_seq_length=seq_length,
         peft_config=peft_config,
-        packing=False,
+        packing=True,
         tokenizer=tokenizer,
-        data_collator=collator,
-        formatting_func=format_fun,
-        dataset_num_proc=24,
+        # formatting_func=format_fun,
     )
     trainer.train()
     trainer.save_model(output_name)
