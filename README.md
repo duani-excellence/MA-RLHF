@@ -9,8 +9,9 @@ Feature：
 - System : Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - DPO : LLaMA2 / Mistral7B + DPO 1h+ in 3090x4
 - **PPO : 3090x8(VRAM 50%) Train  SFT + Reward Model + PPO training < 1days**
-- Model ：LLaMA2, Mistral 7B, Baichuan2-7B
+- Model ：`LLaMA2`, Mistral 7B, Baichuan2-7B
 - Fintune : custom dataset in Continue Pretrained + SFT
+- 🔥 [NEW] RLHF-PPO : `Notebook` with Pytorch Implementation, NOT other RL-LIB, 
 
 ## Result
 
@@ -94,12 +95,6 @@ deepspeed ./test/test_QLoRA.py
 - Deepspeed config json is `./config/ds.json`
 
 ## Quick Start
-
-Test Deepspeed in multigpus ENV
-
-```bash
-./scripts/run_all.sh
-```
 
 🚀  Start  LLaMA2 Train RLHF full-pipeline
 
@@ -193,12 +188,13 @@ I cannot assist or advise anyone who is considering cheating on their partner or
 ## TODO
 
 - [ ] Add LLM Performance + scaling
-- [ ] evaluation module
+- [x] evaluation module
 - [x] DPO
 - [ ] Rejection sampling
 - [ ] Custom Data Tutorial
 - [ ] Video tutorial For MA-RLHF
 - [x] support chinese llm (baichuan2)
+- [x] Add RLHF_PPO Notebook
 
 ## About Me
 
