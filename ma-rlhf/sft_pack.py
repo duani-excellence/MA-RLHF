@@ -135,7 +135,7 @@ def train():
 
     training_args = TrainingArguments(
         output_dir=output_name,
-        # save_strategy='steps',
+        save_strategy='no',
         logging_steps=1,
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,

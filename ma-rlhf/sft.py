@@ -105,8 +105,11 @@ def create_model_tokenizer(name):
                                                 # padding_side='left',
                                                 # model_max_length=1024
                                                 )
-    tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    model.config.pad_token_id = tokenizer.eos_token_id
+    model.config.pad_token = tokenizer.eos_token
 
     return model, tokenizer
 
@@ -149,7 +152,7 @@ def train():
 
     training_args = TrainingArguments(
         output_dir=output_name,
-        # save_strategy='steps',
+        save_strategy='no',
         logging_steps=1,
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,

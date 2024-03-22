@@ -56,7 +56,7 @@ def create_peft(peft_flag: bool = False) -> LoraConfig:
             r=32,
             lora_alpha=8,
             bias="none",
-            # lora_dropout=0.05,
+            lora_dropout=0.05,
             task_type="CAUSAL_LM",
         )
         return peft_config
@@ -73,7 +73,7 @@ def create_peft_reward_model(peft_flag: bool = False) -> LoraConfig:
             r=32,
             lora_alpha=8,
             bias="none",
-            # lora_dropout=0.05,
+            lora_dropout=0.05,
             modules_to_save=["scores"],
         )
         return peft_config
@@ -193,7 +193,7 @@ def format_prompt_answer(question, answer):
 
 
 def format_prompt(question):
-    return f"###Question: {question}\n###Answer: "
+    return f"###Question: {question}\n###Answer:"
 
 
 # medical finetune data haven't 'input', only has 'instruction'

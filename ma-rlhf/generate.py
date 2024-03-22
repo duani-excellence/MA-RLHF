@@ -19,14 +19,15 @@ model = AutoModelForCausalLM.from_pretrained(
 ).to(device)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 
-tokenizer.pad_token = tokenizer.eos_token
 tokenizer.eos_token = DEFINE_EOS_TOKEN
-model.config.eos_token = DEFINE_EOS_TOKEN
-model.config.eos_token_id = tokenizer.eos_token_id
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.pad_token_id = tokenizer.eos_token_id
+model.config.pad_token = DEFINE_EOS_TOKEN
+model.config.pad_token_id = tokenizer.eos_token_id
 
 input = format_prompt(instruction)
 inputs = tokenizer(input, return_tensors='pt').to(device)
-output = model.generate(inputs['input_ids'], max_new_tokens=max_new_tokens, do_sample=False, top_p=1)
+output = model.generate(inputs['input_ids'],max_new_tokens=max_new_tokens, do_sample=False)
 output = tokenizer.decode(output[0], skip_special_tokens=True)
 
 print(output)
