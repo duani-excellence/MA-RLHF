@@ -5,6 +5,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
 from utils import ScriptArguments, format_prompt
 import torch
 from utils import DEFINE_EOS_TOKEN
+import deepspeed
 
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
@@ -15,8 +16,12 @@ max_new_tokens = train_args.max_new_tokens
 
 device = 'cuda:0'
 model = AutoModelForCausalLM.from_pretrained(
-    model_name, torch_dtype=torch.float16, use_flash_attention_2=False, trust_remote_code=True,
-).to(device)
+    model_name,
+    # use_flash_attention_2=True,
+    trust_remote_code=True,
+    # load_in_4bit=True,
+    device_map='auto'
+)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 
 tokenizer.eos_token = DEFINE_EOS_TOKEN

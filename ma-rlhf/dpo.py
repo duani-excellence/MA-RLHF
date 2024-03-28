@@ -55,7 +55,8 @@ def compute_metrics(eval_pred):
 def create_model_tokenizer(name):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
+        # bnb_4bit_use_double_quant=True,
     )
 
     device_map = {"": Accelerator().local_process_index}

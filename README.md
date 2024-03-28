@@ -8,10 +8,11 @@ Feature：
 
 - System : Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - DPO : LLaMA2 / Mistral7B + DPO 1h+ in 3090x4
-- **PPO : 3090x8(VRAM 50%) Train  SFT + Reward Model + PPO training < 1days**
+- **PPO : 3090x8(VRAM 50%) Train SFT + Reward Model + PPO training < 1days**
 - Model ：`LLaMA2`, Mistral 7B, Baichuan2-7B
 - Fintune : custom dataset in Continue Pretrained + SFT
-- 🔥 [NEW] RLHF-PPO : `Notebook` with Pytorch Implementation, NOT other RL-LIB, 
+- 🔥 [NEW] RLHF-PPO : `Notebook` with Pytorch Implementation, NOT other RL-LIB,
+- 💻 70B RLHF： Comming soon， complete SFT/DPO
 
 ## Result
 

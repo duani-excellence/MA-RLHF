@@ -1,1 +1,1 @@
-python ./../rlhf/text_book.py 
+python ./../ma-rlhf/text_book.py
