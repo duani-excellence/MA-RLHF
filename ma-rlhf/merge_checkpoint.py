@@ -1,6 +1,6 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
 import torch
-from utils import ScriptArguments
+from utils import ScriptArguments, create_peft, create_peft_reward_model
 from peft import get_peft_model_state_dict, PeftModel, LoraConfig
 import peft
 from deepspeed.utils.zero_to_fp32 import get_fp32_state_dict_from_zero_checkpoint
@@ -11,7 +11,7 @@ train_args: ScriptArguments = parser.parse_args_into_dataclasses(return_remainin
 base_model_name = train_args.base_model_name
 model_checkpoint_name = train_args.model_name
 model_adapter_name = train_args.merged_model_name
-
+merge_checkpoint_type = train_args.merge_checkpoint_type
 
 def merge(model_base_name, model_checkpoint_name, model_adapter_name):
     # use cpu avoid gpu vram OOM
@@ -26,18 +26,15 @@ def merge(model_base_name, model_checkpoint_name, model_adapter_name):
         trust_remote_code=True,
     )
 
-    # if reward model use other task type
-    peft_config = LoraConfig(
-        r=32,
-        lora_alpha=8,
-        bias="none",
-        lora_dropout=0.05,
-        task_type="CAUSAL_LM",
-    )
+    peft_config = None
+    if merge_checkpoint_type == 'LM':
+        peft_config = create_peft(True)
+    elif merge_checkpoint_type == 'Reward':
+        peft_config = create_peft_reward_model(True)
 
     model = peft.PeftModel(model, peft_config)
     state_dict = get_fp32_state_dict_from_zero_checkpoint(model_checkpoint_name) # already on cpu
-    model = get_peft_model_state_dict(model, state_dict=state_dict)
+    d = get_peft_model_state_dict(model, state_dict=state_dict)
     model.save_pretrained(model_adapter_name)
     tokenizer.save_pretrained(model_adapter_name)
     print('save model finish')

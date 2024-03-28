@@ -187,6 +187,8 @@ class ScriptArguments:
         default=True, metadata={"help": "gpt2 no flash attention2"}
     )
 
+    merge_checkpoint_type: Optional[str] = field(default='LM', metadata={"help": "merge check point"})
+
 def format_prompt_answer(question, answer):
     '''for generation'''
     return f"###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
