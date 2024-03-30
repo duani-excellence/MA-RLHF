@@ -1,4 +1,5 @@
 import os
+import deepspeed
 from datasets import load_dataset, load_from_disk
 from trl import RewardTrainer, RewardConfig
 import re
@@ -48,14 +49,18 @@ def compute_metrics(eval_pred):
 def create_model_tokenizer(name):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
+        # bnb_4bit_use_double_quant=True,
     )
 
     device_map = {"": Accelerator().local_process_index}
     print('device map: ', device_map)
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        model_name, quantization_config=bnb_config, device_map=device_map, num_labels=1
+        model_name,
+        quantization_config=bnb_config,
+        device_map=device_map, # 70b use auto
+        num_labels=1
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
@@ -136,10 +141,12 @@ def preprocess_function_safe_rlhf(examples):
         tokenized_chosen = tokenizer(
             f"###Question: {question}\n###Answer:{response_chosen} {tokenizer.eos_token}",
             truncation=True,
+            padding='longest',
         )
         tokenized_rejected = tokenizer(
             f"###Question: {question}\n###Answer:{response_rejected} {tokenizer.eos_token}",
             truncation=True,
+            padding='longest',
         )
 
         new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
@@ -202,7 +209,7 @@ def create_reward_model_datasets(datasets_name, dataset_sub_name, tokenizer):
     train_dataset = train_dataset.map(
         func,
         batched=True,
-        num_proc=8,
+        num_proc=24,
     )
 
     torch.distributed.barrier()
@@ -237,6 +244,7 @@ def train():
     # PEFT
     peft_config = create_peft_reward_model(is_peft)
 
+    # ZERO stage3 use config like # https://github.com/huggingface/trl/issues/835
     reward_config = RewardConfig(
         output_dir=output_name,
         per_device_train_batch_size=batch_size,

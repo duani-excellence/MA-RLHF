@@ -32,6 +32,8 @@ def merge(model_base_name, model_checkpoint_name, model_adapter_name):
     elif merge_checkpoint_type == 'Reward':
         peft_config = create_peft_reward_model(True)
 
+    # ref this for ZERO3 checkpoint to safetensor
+    # https://github.com/huggingface/peft/issues/460
     model = peft.PeftModel(model, peft_config)
     state_dict = get_fp32_state_dict_from_zero_checkpoint(model_checkpoint_name) # already on cpu
     d = get_peft_model_state_dict(model, state_dict=state_dict)

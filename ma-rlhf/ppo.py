@@ -1,3 +1,4 @@
+from codecs import BOM_BE
 import re
 import torch
 import os
@@ -14,6 +15,7 @@ from utils import (
     DEFINE_EOS_TOKEN,
     format_prompt,
 )
+import time
 
 os.environ["WANDB_PROJECT"] = "ma-rlhf"
 os.environ["WANDB_RUN_NAME"] = "ppo"
@@ -41,7 +43,8 @@ gradient_accumulation_steps = train_args.gradient_accumulation_steps
 def create_model_tokenizer(name, rm_model_name, peft_config):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
+        # bnb_4bit_use_double_quant=True,
     )
 
     device_map = {"": Accelerator().local_process_index}
@@ -52,9 +55,10 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
         quantization_config=bnb_config,
         peft_config=peft_config,
         reward_adapter=rm_model_name,
-        device_map=device_map,
+        device_map=device_map,  # 70b use 'auto' would auto shard parameter
         use_flash_attention_2=True,
         trust_remote_code=True,
+        # low_cpu_mem_usage=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -106,15 +110,15 @@ def create_dataset(dataset_name, tokenizer):
         return new_examples
 
     func = None
-    if dataset_name == 'Anthropic/hh-rlhf':
+    if 'hh-rlhf' in dataset_name: # Anthropic/hh-rlhf
         func = preprocess_function_hhrlhf
-    elif dataset_name == 'PKU-Alignment/PKU-SafeRLHF-10K':
+    elif 'SafeRLHF' in dataset_name: # PKU-Alignment/PKU-SafeRLHF-10K
         func = preprocess_function
 
     datasets = datasets.map(
         func,
         batched=True,
-        num_proc=8,
+        num_proc=24,
         remove_columns=datasets.column_names,
     )
 
@@ -182,8 +186,11 @@ def train():
 
     # for epoch, batch in enumerate(trainer.dataloader):
     for epoch, batch in enumerate(trainer.dataloader):
+        start_time = time.time()
+
         if epoch >= config.total_ppo_epochs:
             break
+
         question_tensors = batch["input_ids"]
         response_tensors = trainer.generate(
             question_tensors,

@@ -1,13 +1,27 @@
 
 # base_model_path='meta-llama/Llama-2-70b-hf'
-deepspeed_config_name='./config/ds.json'
+deepspeed_config_name_stage2='./config/ds_stage2.json'
+deepspeed_config_name='./config/ds_70b.json'
 output_path='./output/ppo_prior'
 sft_path='./output/dpo_full' # Use DPO-Model as base model
+# sft_path='meta-llama/Llama-2-7b-hf' # Use DPO-Model as base model
 
 model_sft_full_path=${sft_path}
 model_reward_model_lora_path=${output_path}'/reward_model_lora'
 model_ppo_lora_path=${output_path}'/ppo_lora'
 model_ppo_full_path=${output_path}'/ppo_full'
+
+
+# # test 7b ppo
+# output_path='./output/ppo_prior'
+# sft_path='meta-llama/Llama-2-7b-hf' # Use DPO-Model as base model
+# model_sft_full_path=${sft_path}
+# model_reward_model_lora_path=${output_path}'/reward_model_lora_test'
+# model_ppo_lora_path=${output_path}'/ppo_lora_test'
+# model_ppo_full_path=${output_path}'/ppo_full_test'
+
+
+
 
 echo '-------------------------------------------------------'
 date
@@ -32,6 +46,7 @@ deepspeed ./ma-rlhf/reward_model.py \
 
 
 # merge zero3 checkpoint to lora parameter
+# emmm, if zero1/2 not use merge checkpoint
 python ./ma-rlhf/merge_checkpoint.py \
 	--base_model_name=${model_sft_full_path} \
 	--model_name=${model_reward_model_lora_path} \
