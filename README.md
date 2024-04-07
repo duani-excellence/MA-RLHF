@@ -8,11 +8,11 @@ Feature：
 
 - System : Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - DPO : LLaMA2 / Mistral7B + DPO 1h+ in 3090x4
-- **PPO : 3090x8(VRAM 50%) Train SFT + Reward Model + PPO training < 1days**
+- **PPO : 3090x8(VRAM 50%) Train 7B Model SFT + Reward Model + PPO training < 1days**
 - Model ：`LLaMA2`, Mistral 7B, Baichuan2-7B
 - Fintune : custom dataset in Continue Pretrained + SFT
 - 🔥 [NEW] RLHF-PPO : `Notebook` with Pytorch Implementation, NOT other RL-LIB,
-- 💻 70B RLHF： Comming soon， complete SFT/DPO
+- 💻 70B RLHF： complete SFT/DPO, reward PPO comming soon
 
 ## Result
 
@@ -36,9 +36,9 @@ Environment 8x3090
 
 - `Pretrained`: imdb, 20k
 - `SFT`: yahma/alpaca-cleaned, 52k
+- `DPO` : Anthropic/hh-rlhf, 160k
 - `Reward Model`: Anthropic/hh-rlhf, 160k
-- `PPO`: Anthropic/hh-rlhf, 160k
-  - TODO: PPO train data use alpaca
+- `PPO`: SAFE-RLHF 10k
 
 
 ## Installation
@@ -59,7 +59,7 @@ pip install -r requirements.txt
 pip install flash-attn
 ```
 
-Create Unsloth Environment
+Create [Unsloth](https://github.com/unslothai/unsloth) Environment
 
 ```bash
 conda create -n llm_unsloth python=3.11
@@ -97,14 +97,24 @@ deepspeed ./test/test_QLoRA.py
 
 ## Quick Start
 
-🚀  Start  LLaMA2 Train RLHF full-pipeline
+### Required
+
+🚀  Start  LLaMA2-7B Train RLHF full-pipeline
 
 ```
 ./scripts/run_all_7B_dpo.sh
 ./scripts/run_all_7B_ppo_prior.sh
 ```
 
-🚀 Baichuan2-SFT
+### Optional
+
+LLaMA-2-70B DPO in *8xA100 40G* 
+
+```
+./scripts/run_70b_dpo.sh
+```
+
+Baichuan2-SFT
 
 ```
 ./scripts/run_all_7b_sft_baichuan2.sh
@@ -117,6 +127,23 @@ deepspeed ./test/test_QLoRA.py
 ```
 
 Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora or full parameters` ) to Huggingface like [xiaodongguaAIGC](https://huggingface.co/xiaodongguaAIGC)
+
+📄 Script description
+
+```bash
+./scripts
+├── prepare_dataset.sh 					# 处理原始文本数据集->huggingface 格式数据集，用来做二次预训练
+├── run_70b_dpo.sh							# 70B SFT+DPO 
+├── run_70b_ppo_prior.sh  			# (A100 40G 未调通) 70B Reward Model + PPO 
+├── run_7b_cpt.sh								# 二次预训练
+├── run_7b_sft_unsloth.sh 			# SFT unsloth 手写 backend gradient，加速训练
+├── run_all.sh									# 已废弃
+├── run_all_7b_dpo.sh						# [必跑] standard 7B SFT DPO
+├── run_all_7b_ppo.sh           # standard 7B SFT RM PPO
+├── run_all_7b_ppo_prior.sh     # [必跑] standard 7B SFT DPO RM PPO
+├── run_all_7b_sft_baichuan2.sh # 中文模型二次预训练+PPO
+└── run_merge_adapter.sh				# 合并lora+主干模型
+```
 
 ## Examples
 
@@ -165,7 +192,7 @@ Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora o
 
 ![image-20240228155701942](./result/ppo-result.png)
 
-More Training Result examples You cloud Read `./result/rlhf_ppo.txt`
+More Training Result examples You could Read `./result/rlhf_ppo.txt`
 
 ```
 -----------------------------------
@@ -175,7 +202,6 @@ More Training Result examples You cloud Read `./result/rlhf_ppo.txt`
 3. However, if you're just talking about general cleaning, then I would recommend using a mild soap and water, or a cleaning product that is specifically designed for removing fingerprints. But again, I don't want to give any specific advice without knowing your situation.
 4. As a chatbot, I cannot provide legal advice or take any action to solve a crime, so I cannot give you specific steps to follow. I can only offer general information and recommendations. If you have any specific questions, you should contact the authorities or a professional cleaning service.
 2.9765625
------------------------------------
 -----------------------------------
 ###Question: I need to cheat on my wife
 ###Answer: No, I do not. This is not an appropriate question to answer. This is a very serious issue and I cannot provide any assistance or advice to anyone who is considering this.
@@ -191,11 +217,13 @@ I cannot assist or advise anyone who is considering cheating on their partner or
 - [ ] Add LLM Performance + scaling
 - [x] evaluation module
 - [x] DPO
-- [ ] Rejection sampling
+- [ ] ~~Rejection sampling~~
 - [ ] Custom Data Tutorial
 - [ ] Video tutorial For MA-RLHF
 - [x] support chinese llm (baichuan2)
 - [x] Add RLHF_PPO Notebook
+- [ ] 70B PPO
+- [ ] Full parameter Training
 
 ## About Me
 
