@@ -132,17 +132,17 @@ Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora o
 
 ```bash
 ./scripts
-├── prepare_dataset.sh 					# 处理原始文本数据集->huggingface 格式数据集，用来做二次预训练
-├── run_70b_dpo.sh							# 70B SFT+DPO 
-├── run_70b_ppo_prior.sh  			# (A100 40G 未调通) 70B Reward Model + PPO 
-├── run_7b_cpt.sh								# 二次预训练
-├── run_7b_sft_unsloth.sh 			# SFT unsloth 手写 backend gradient，加速训练
-├── run_all.sh									# 已废弃
-├── run_all_7b_dpo.sh						# [必跑] standard 7B SFT DPO
-├── run_all_7b_ppo.sh           # standard 7B SFT RM PPO
-├── run_all_7b_ppo_prior.sh     # [必跑] standard 7B SFT DPO RM PPO
+├── prepare_dataset.sh # 处理原始文本数据集->huggingface 格式数据集，用来做二次预训练
+├── run_70b_dpo.sh # 70B SFT+DPO 
+├── run_70b_ppo_prior.sh # (A100 40G 未调通) 70B Reward Model + PPO 
+├── run_7b_cpt.sh # 二次预训练
+├── run_7b_sft_unsloth.sh # SFT unsloth 手写 backend gradient，加速训练
+├── run_all.sh # 已废弃
+├── run_all_7b_dpo.sh # [必跑] standard 7B SFT DPO
+├── run_all_7b_ppo.sh # standard 7B SFT RM PPO
+├── run_all_7b_ppo_prior.sh # [必跑] standard 7B SFT DPO RM PPO
 ├── run_all_7b_sft_baichuan2.sh # 中文模型二次预训练+PPO
-└── run_merge_adapter.sh				# 合并lora+主干模型
+└── run_merge_adapter.sh # 合并lora+主干模型
 ```
 
 ## Examples
