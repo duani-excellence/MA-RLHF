@@ -1,4 +1,4 @@
-# 完整运行
+# 该脚本已废除
 
 base_model_path='meta-llama/Llama-2-7b-hf'
 deepspeed_config_name=./config/ds.json

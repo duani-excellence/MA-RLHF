@@ -40,6 +40,7 @@ num_train_epochs = train_args.num_train_epochs
 beta = 0.1 # default
 gradient_accumulation_steps = train_args.gradient_accumulation_steps
 learning_rate = train_args.learning_rate
+use_qlora_double_quant = train_args.use_qlora_double_quant
 
 
 accuracy = evaluate.load("accuracy")
@@ -56,7 +57,7 @@ def create_model_tokenizer(name):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
-        # bnb_4bit_use_double_quant=True,
+        bnb_4bit_use_double_quant=use_qlora_double_quant,
     )
 
     device_map = {"": Accelerator().local_process_index}

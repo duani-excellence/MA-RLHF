@@ -189,6 +189,8 @@ class ScriptArguments:
 
     merge_checkpoint_type: Optional[str] = field(default='LM', metadata={"help": "merge check point"})
 
+    use_qlora_double_quant: Optional[bool] = field(default=False, metadata={"help": "merge check point"})
+
 def format_prompt_answer(question, answer):
     '''for generation'''
     return f"###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"

@@ -42,7 +42,8 @@ deepspeed ./ma-rlhf/reward_model.py \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--num_train_epochs=1 \
 	--gradient_accumulation_steps=2 \
-	--learning_rate=2e-5
+	--learning_rate=2e-5 \
+  	--use_qlora_double_quant=True
 
 
 # merge zero3 checkpoint to lora parameter
@@ -58,14 +59,14 @@ python ./ma-rlhf/merge_checkpoint.py \
 python test/test_reward.py
 
 
-#  echo '-------------------------------------------------------'
-#  date
-#  echo '-------------------------------------------------------'
+# echo '-------------------------------------------------------'
+# date
+# echo '-------------------------------------------------------'
 
 # # stage ppo prior using DPO-Model as base model
 # # ~ 4hour with 8 * 3090-24GB
-# rm_dataset_name='/root/PKU-SafeRLHF-10K'
-# deepspeed ./ma-rlhf/ppo.py \
+# rm_dataset_name='PKU-Alignment/PKU-SafeRLHF-10K'
+# deepspeed ./ma-rlhf/ppo_70b.py \
 # 	--dataset_name=${rm_dataset_name} \
 # 	--model_name=${model_sft_full_path} \
 # 	--reward_model_name=${model_reward_model_lora_path} \
@@ -73,12 +74,41 @@ python test/test_reward.py
 # 	--use_QLora=True \
 # 	--use_flash_attention_2=True \
 # 	--deepspeed_config_name=${deepspeed_config_name} \
-# 	--batch_size=16 \
+# 	--batch_size=1 \
 # 	--mini_batch_size=1 \
 # 	--ppo_epochs=1 \
 # 	--output_max_length=512 \
 # 	--seq_length=64 \
-# 	--gradient_accumulation_steps=2
+# 	--gradient_accumulation_steps=1 \
+# 	--deepspeed=${deepspeed_config_name} \
+#	--use_qlora_double_quant=True
+
+
+# # backup, Use accelerate launch
+# rm_dataset_name='PKU-Alignment/PKU-SafeRLHF-10K'
+# accelerate launch \
+# 	--config_file ./config/deepspeed_zero3.yaml \
+# 	--num_processes 8 ./ma-rlhf/ppo_70b.py \
+# 	--log_with=wandb \
+# 	--model_name=${model_sft_full_path} \
+# 	--reward_model_name=${model_reward_model_lora_path} \
+# 	--adafactor=False \
+# 	--tokenizer_name=${model_sft_full_path} \
+# 	--batched_gen=True \
+# 	--seed=0 \
+# 	--learning_rate=1.4e-5 \
+# 	--early_stopping=True \
+# 	--output_dir=${model_ppo_lora_path} \
+# 	--use_QLora=True \
+# 	--use_flash_attention_2=True \
+# 	--deepspeed_config_name=${deepspeed_config_name} \
+# 	--batch_size=1 \
+# 	--mini_batch_size=1 \
+# 	--ppo_epochs=1 \
+# 	--output_max_length=512 \
+# 	--seq_length=64 \
+# 	--gradient_accumulation_steps=1 \
+# 	--dataset_name=${rm_dataset_name}
 
 
 # # merge zero3 checkpoint to lora parameter

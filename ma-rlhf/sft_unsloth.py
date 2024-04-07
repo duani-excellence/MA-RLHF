@@ -36,6 +36,7 @@ is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
 dataset_sub_name = None
 num_train_epochs = train_args.num_train_epochs
+use_qlora_double_quant = train_args.use_qlora_double_quant
 
 
 def create_datasets(dataset_name, dataset_sub_name):

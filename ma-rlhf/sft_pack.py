@@ -43,6 +43,7 @@ dataset_sub_name = None
 num_train_epochs = train_args.num_train_epochs
 gradient_accumulation_steps = train_args.gradient_accumulation_steps
 learning_rate = train_args.learning_rate
+use_qlora_double_quant = train_args.use_qlora_double_quant
 
 def create_datasets(dataset_name, dataset_sub_name):
     dataset = load_dataset(dataset_name)
@@ -89,7 +90,7 @@ def create_model_tokenizer(name):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
-        # bnb_4bit_use_double_quant=True,
+        bnb_4bit_use_double_quant=use_qlora_double_quant,
     )
     device_map = {"": Accelerator().local_process_index}
     model = AutoModelForCausalLM.from_pretrained(
