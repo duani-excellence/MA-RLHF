@@ -81,10 +81,11 @@ python test/test_reward.py
 # 	--seq_length=64 \
 # 	--gradient_accumulation_steps=1 \
 # 	--deepspeed=${deepspeed_config_name} \
-#	--use_qlora_double_quant=True
+# 	--use_qlora_double_quant=True
 
 
 # # backup, Use accelerate launch
+# # export DS_SKIP_CUDA_CHECK=1
 # rm_dataset_name='PKU-Alignment/PKU-SafeRLHF-10K'
 # accelerate launch \
 # 	--config_file ./config/deepspeed_zero3.yaml \
@@ -101,7 +102,6 @@ python test/test_reward.py
 # 	--output_dir=${model_ppo_lora_path} \
 # 	--use_QLora=True \
 # 	--use_flash_attention_2=True \
-# 	--deepspeed_config_name=${deepspeed_config_name} \
 # 	--batch_size=1 \
 # 	--mini_batch_size=1 \
 # 	--ppo_epochs=1 \

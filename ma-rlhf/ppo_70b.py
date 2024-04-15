@@ -19,6 +19,9 @@ from utils import (
 )
 import time
 
+# import deepspeed
+# deepspeed.ops.op_builder.CPUAdamBuilder().load()
+
 os.environ["WANDB_PROJECT"] = "ma-rlhf"
 os.environ["WANDB_RUN_NAME"] = "ppo"
 
@@ -46,13 +49,17 @@ use_qlora_double_quant = train_args.use_qlora_double_quant
 def create_model_tokenizer(name, rm_model_name, peft_config):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16,
+        load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16,
         bnb_4bit_use_double_quant=use_qlora_double_quant,
-        # llm_int8_enable_fp32_cpu_offload=True,
+        llm_int8_enable_fp32_cpu_offload=True,
     )
+    # bnb_config = BitsAndBytesConfig(
+    #     load_in_8bit=True,
+    #     bnb_4bit_compute_dtype=torch.bfloat16,
+    # )
 
-    device_map = {"": Accelerator().local_process_index}
-    print('device map: ', device_map)
+    # device_map = {"": Accelerator().local_process_index}
+    # print('device map: ', device_map)
 
     model = AutoModelForCausalLMWithValueHead.from_pretrained(
         name,
@@ -60,13 +67,15 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
         peft_config=peft_config,
         reward_adapter=rm_model_name,
         # device_map='auto',  # 70b use 'auto' would auto shard parameter
-        use_flash_attention_2=True,
+        # use_flash_attention_2=True,
         trust_remote_code=True,
         # low_cpu_mem_usage=True,
+        torch_dtype=torch.float16,
+
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name, use_fast=True,
+        name, use_fast=True,
         trust_remote_code=True,
     )
     tokenizer.pad_token = tokenizer.eos_token
@@ -159,11 +168,6 @@ def train():
         "forced_eos_token_id": True,
     }
     output_length_sampler = LengthSampler(128, output_max_length)
-
-    ds_config = DeepSpeedPlugin()
-    ds_config.hf_ds_config = HfDeepSpeedConfig(deepspeed_config_name)
-    # ds_config.hf_ds_config = deepspeed_config_name
-    print(ds_config.hf_ds_config)
 
     config = PPOConfig(
         log_with='wandb',
