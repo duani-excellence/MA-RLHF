@@ -108,7 +108,7 @@ deepspeed ./test/test_QLoRA.py
 
 ### Optional
 
-LLaMA-2-70B DPO in *8xA100 40G* 
+LLaMA-2-70B DPO in *8xA100 40G*
 
 ```
 ./scripts/run_70b_dpo.sh
@@ -133,8 +133,8 @@ Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora o
 ```bash
 ./scripts
 ├── prepare_dataset.sh # 处理原始文本数据集->huggingface 格式数据集，用来做二次预训练
-├── run_70b_dpo.sh # 70B SFT+DPO 
-├── run_70b_ppo_prior.sh # (A100 40G 未调通) 70B Reward Model + PPO 
+├── run_70b_dpo.sh # 70B SFT+DPO
+├── run_70b_ppo_prior.sh # (A100 40G 未调通) 70B Reward Model + PPO
 ├── run_7b_cpt.sh # 二次预训练
 ├── run_7b_sft_unsloth.sh # SFT unsloth 手写 backend gradient，加速训练
 ├── run_all.sh # 已废弃
@@ -224,6 +224,7 @@ I cannot assist or advise anyone who is considering cheating on their partner or
 - [x] Add RLHF_PPO Notebook
 - [ ] 70B PPO
 - [ ] Full parameter Training
+- [ ] easy DeepSpeed learning code
 
 ## About Me
 
