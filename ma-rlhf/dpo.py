@@ -11,6 +11,7 @@ from utils import (
     ScriptArguments,
     DEFINE_EOS_TOKEN,
     create_peft,
+    format_prompt,
 )
 from transformers import (
     AutoTokenizer,
@@ -87,33 +88,51 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # Anthropic/hh-rlhf
 # chosen, rejected
-# def preprocess_function_hhrlhf(examples):
-#     new_examples = {
-#         "prompt": [],
-#         "chosen": [],
-#         "rejected": [],
-#     }
+def preprocess_function_hhrlhf(examples):
+    new_examples = {
+        "prompt": [],
+        "chosen": [],
+        "rejected": [],
+    }
 
-#     for prompt_chosen, prompt_rejected in zip(
-#         examples["chosen"], examples["rejected"]
-#     ):
-#         prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
-#         prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
-#         prompt_chosen = prompt_chosen[1:] # ignore first \n
-#         prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
-#         prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
-#         prompt_rejected = prompt_rejected[1:] # ignore first \n
+    for prompt_chosen, prompt_rejected in zip(
+        examples["chosen"], examples["rejected"]
+    ):
+        prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
+        prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
+        prompt_chosen = prompt_chosen[1:] # ignore first \n
+        prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
+        prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
+        prompt_rejected = prompt_rejected[1:] # ignore first \n
 
-#         prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
-#         response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-#         response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-#         # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
+        prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
+        response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+        response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+        # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
 
-#         new_examples['prompt'].append(prompt_question)
-#         new_examples['chosen'].append(response_chosen)
-#         new_examples['rejected'].append(response_rejected)
+        new_examples['prompt'].append(prompt_question)
+        new_examples['chosen'].append(response_chosen)
+        new_examples['rejected'].append(response_rejected)
 
-#     return new_examples
+    return new_examples
+
+# Skepsun/cvalues_rlhf
+def preprocess_function_cvalues(examples):
+        new_examples = {
+            "prompt": [],
+            "chosen": [],
+            "rejected": [],
+        }
+
+        for prompt, prompt_chosen, prompt_rejected in zip(
+            examples['prompt'], examples["chosen"], examples["rejected"]
+        ):
+            prompt_question = format_prompt(prompt)
+            new_examples['prompt'].append(prompt_question)
+            new_examples['chosen'].append(prompt_chosen)
+            new_examples['rejected'].append(prompt_rejected)
+
+        return new_examples
 
 
 def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
@@ -128,36 +147,17 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
     # eval_dataset2 = load_dataset('Unified-Language-Model-Alignment/Anthropic_HH_Golden', split='test')
     # eval_dataset = concatenate_datasets([eval_dataset, eval_dataset2])
     # eval_dataset = eval_dataset.shuffle(seed=42)
-    def preprocess_function_hhrlhf(examples):
-        new_examples = {
-            "prompt": [],
-            "chosen": [],
-            "rejected": [],
-        }
 
-        for prompt_chosen, prompt_rejected in zip(
-            examples["chosen"], examples["rejected"]
-        ):
-            prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
-            prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
-            prompt_chosen = prompt_chosen[1:] # ignore first \n
-            prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
-            prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
-            prompt_rejected = prompt_rejected[1:] # ignore first \n
+    # preprocess_function = None
+    func = None
+    if 'hh-rlhf' in dataset_name: # Anthropic/hh-rlhf
+        func = preprocess_function_hhrlhf
+    elif 'cvalues' in dataset_name: # PKU-Alignment/PKU-SafeRLHF-10K
+        func = preprocess_function_cvalues
 
-            prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
-            response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-            response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-            # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
-
-            new_examples['prompt'].append(prompt_question)
-            new_examples['chosen'].append(response_chosen)
-            new_examples['rejected'].append(response_rejected)
-
-        return new_examples
 
     train_dataset = train_dataset.map(
-        preprocess_function_hhrlhf,
+        func,
         batched=True,
         num_proc=16,
     )

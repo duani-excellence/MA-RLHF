@@ -209,9 +209,16 @@ def formatting_finetune_func(example):
     return text
 
 
-def formatting_reward_func(example):
-    text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
-    return text
+# def formatting_reward_func(example):
+#     text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
+#     return text
+
+
+
+# def formatting_reward_func(example):
+#     text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
+#     return text
+
 
 def formatting_alpaca_func_bached(example):
     output_text = []
