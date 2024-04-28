@@ -196,36 +196,36 @@ class ScriptArguments:
 
 def format_prompt_answer(question, answer):
     '''for generation'''
-    return f"###System: ${SYSTEM_PROMPT}\n###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
 
 
 def format_prompt(question):
-    return f"###System: ${SYSTEM_PROMPT}\n###Question: {question}\n###Answer:"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer:"
 
 
 # medical finetune data haven't 'input', only has 'instruction'
 def formatting_finetune_func(example):
-    text = f"###System: ${SYSTEM_PROMPT}\n###Question: {example['instruction']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
+    text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
     return text
 
 
 def formatting_reward_func(example):
-    text = f"###System: ${SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
+    text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
     return text
 
 def formatting_alpaca_func_bached(example):
     output_text = []
     for i, instruction in enumerate(example["instruction"]):
-        text = f"###System: ${SYSTEM_PROMPT}\n###Question: {instruction} {example['input'][i]}\n###Answer: {example['output'][i]} {DEFINE_EOS_TOKEN}"
+        text = f"###System: {SYSTEM_PROMPT}\n###Question: {instruction} {example['input'][i]}\n###Answer: {example['output'][i]} {DEFINE_EOS_TOKEN}"
         output_text.append(text)
     return output_text
 
 def formatting_alpaca_func(example):
-    return f"###System: ${SYSTEM_PROMPT}\n###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
 
 
 def formatting_alpaca_chinese_func(example):
-    return f"###System: ${SYSTEM_PROMPT}\n###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
 
 # def formatting_hhrlhf_func(example):
 #     random_int = random.randint(0, 1)
