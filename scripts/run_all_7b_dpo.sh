@@ -1,6 +1,6 @@
 # 完整运行
 
-base_model_path='meta-llama/Llama-2-7b-hf'
+base_model_path='meta-llama/Meta-Llama-3-8B'
 deepspeed_config_name=./config/ds.json
 output_path='./output'
 
@@ -22,7 +22,8 @@ echo '-------------------------------------------------------'
 
 # stage: sft
 # sft_dataset_name='yahma/alpaca-cleaned'
-sft_dataset_name='vicgalle/alpaca-gpt4'
+# sft_dataset_name='vicgalle/alpaca-gpt4'
+sft_dataset_name='fireinwind/GPT4_Instinwild_belle_cn_school_math_zdmqa'
 model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft_pack.py \
 	--dataset_name=${sft_dataset_name} \
@@ -47,7 +48,8 @@ python ./ma-rlhf/merge_adapter.py \
 
 # stage dpo
 # llama2-7b 22GB 2h30min
-rm_dataset_name='Anthropic/hh-rlhf'
+rm_dataset_name='wenbopan/Chinese-dpo-pairs'
+# rm_dataset_name='Anthropic/hh-rlhf'
 deepspeed ./ma-rlhf/dpo.py \
 	--dataset_name=${rm_dataset_name} \
 	--model_name=${model_sft_full_path} \
@@ -59,7 +61,7 @@ deepspeed ./ma-rlhf/dpo.py \
 	--num_train_epochs=2 \
 	--seq_length=512 \
 	--gradient_accumulation_steps=4 \
-	--learning_rate=5e-5
+	--learning_rate=2e-5
 
 
  # merge DPO

@@ -95,10 +95,11 @@ def create_model_tokenizer(name):
     device_map = {"": Accelerator().local_process_index}
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config,
+        quantization_config=bnb_config if not is_peft else None,
         device_map=device_map,
         use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
         trust_remote_code=True,
+        torch_dtype=torch.bfloat16,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name,
@@ -106,8 +107,11 @@ def create_model_tokenizer(name):
                                                 # padding_side='left',
                                                 # model_max_length=1024
                                                 )
-    tokenizer.pad_token = tokenizer.eos_token
     tokenizer.eos_token = DEFINE_EOS_TOKEN
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    model.config.pad_token_id = tokenizer.eos_token_id
+    model.config.pad_token = tokenizer.eos_token
 
     return model, tokenizer
 

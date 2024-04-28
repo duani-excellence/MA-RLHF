@@ -73,7 +73,9 @@ def create_model_tokenizer(name):
 
     tokenizer.eos_token = DEFINE_EOS_TOKEN
     tokenizer.pad_token = tokenizer.eos_token
-    model.config.pad_token_id = model.config.eos_token_id
+    tokenizer.pad_token_id = tokenizer.eos_token_id
+    model.config.pad_token_id = tokenizer.eos_token_id
+    model.config.pad_token = tokenizer.eos_token
 
     return model, tokenizer
 
@@ -85,33 +87,33 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # Anthropic/hh-rlhf
 # chosen, rejected
-def preprocess_function_hhrlhf(examples):
-    new_examples = {
-        "prompt": [],
-        "chosen": [],
-        "rejected": [],
-    }
+# def preprocess_function_hhrlhf(examples):
+#     new_examples = {
+#         "prompt": [],
+#         "chosen": [],
+#         "rejected": [],
+#     }
 
-    for prompt_chosen, prompt_rejected in zip(
-        examples["chosen"], examples["rejected"]
-    ):
-        prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
-        prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
-        prompt_chosen = prompt_chosen[1:] # ignore first \n
-        prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
-        prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
-        prompt_rejected = prompt_rejected[1:] # ignore first \n
+#     for prompt_chosen, prompt_rejected in zip(
+#         examples["chosen"], examples["rejected"]
+#     ):
+#         prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
+#         prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
+#         prompt_chosen = prompt_chosen[1:] # ignore first \n
+#         prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
+#         prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
+#         prompt_rejected = prompt_rejected[1:] # ignore first \n
 
-        prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
-        response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-        response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-        # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
+#         prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
+#         response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+#         response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+#         # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
 
-        new_examples['prompt'].append(prompt_question)
-        new_examples['chosen'].append(response_chosen)
-        new_examples['rejected'].append(response_rejected)
+#         new_examples['prompt'].append(prompt_question)
+#         new_examples['chosen'].append(response_chosen)
+#         new_examples['rejected'].append(response_rejected)
 
-    return new_examples
+#     return new_examples
 
 
 def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
@@ -122,10 +124,37 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
     # train_dataset = concatenate_datasets([train_dataset, train_dataset2])
     # train_dataset = train_dataset.shuffle(seed=42)
 
-    eval_dataset = load_dataset(datasets_name, split='test')
+    # eval_dataset = load_dataset(datasets_name, split='test')
     # eval_dataset2 = load_dataset('Unified-Language-Model-Alignment/Anthropic_HH_Golden', split='test')
     # eval_dataset = concatenate_datasets([eval_dataset, eval_dataset2])
     # eval_dataset = eval_dataset.shuffle(seed=42)
+    def preprocess_function_hhrlhf(examples):
+        new_examples = {
+            "prompt": [],
+            "chosen": [],
+            "rejected": [],
+        }
+
+        for prompt_chosen, prompt_rejected in zip(
+            examples["chosen"], examples["rejected"]
+        ):
+            prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
+            prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
+            prompt_chosen = prompt_chosen[1:] # ignore first \n
+            prompt_rejected = re.sub(r'\n\nHuman:', '\n###Question:', prompt_rejected)
+            prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
+            prompt_rejected = prompt_rejected[1:] # ignore first \n
+
+            prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
+            response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+            response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
+            # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
+
+            new_examples['prompt'].append(prompt_question)
+            new_examples['chosen'].append(response_chosen)
+            new_examples['rejected'].append(response_rejected)
+
+        return new_examples
 
     train_dataset = train_dataset.map(
         preprocess_function_hhrlhf,
@@ -138,18 +167,18 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
         and len(x["prompt"]) + len(x["rejected"]) <= seq_length
     )
 
-    eval_dataset = eval_dataset.map(
-        preprocess_function_hhrlhf,
-        batched=True,
-        num_proc=16,
-    )
+    # eval_dataset = eval_dataset.map(
+    #     preprocess_function_hhrlhf,
+    #     batched=True,
+    #     num_proc=16,
+    # )
 
-    eval_dataset = eval_dataset.filter(
-        lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
-        and len(x["prompt"]) + len(x["rejected"]) <= seq_length
-    )
+    # eval_dataset = eval_dataset.filter(
+    #     lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
+    #     and len(x["prompt"]) + len(x["rejected"]) <= seq_length
+    # )
 
-    return train_dataset, eval_dataset
+    return train_dataset, None
 
 
 def train():
@@ -177,7 +206,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        # max_steps=200,
+        max_steps=10,
     )
 
     trainer = DPOTrainer(
@@ -186,7 +215,7 @@ def train():
         args=training_args,
         beta=beta,
         train_dataset=train_datasets,
-        eval_dataset=test_datasets,
+        # eval_dataset=test_datasets,
         tokenizer=tokenizer,
         peft_config=peft_config,
         max_prompt_length= output_max_length,
