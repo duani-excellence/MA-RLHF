@@ -18,9 +18,9 @@ from transformers import (
 # DEFINE_EOS_TOKEN = '''</s>'''
 # DEFINE_BOS_TOKEN = '''<s>'''
 # SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
-DEFINE_EOS_TOKEN = '''<|begin_of_text|>'''
-DEFINE_BOS_TOKEN = '''<|end_of_text|>'''
-SYSTEM_PROMPT = '''你是一个友好的中文对话机器人，请用中文回答问题。'''
+DEFINE_EOS_TOKEN = '''<|end_of_text|>'''
+DEFINE_BOS_TOKEN = '''<|begin_of_text|>'''
+SYSTEM_PROMPT = '''你是一个友好的中文对话机器人。'''
 
 
 
@@ -184,7 +184,7 @@ class ScriptArguments:
 
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
 
-    use_QLora: Optional[bool] = field(default=True, metadata={"help": "todo optional"})
+    use_QLora: Optional[bool] = field(default=False, metadata={"help": "todo optional"})
 
     use_flash_attention_2: Optional[bool] = field(
         default=True, metadata={"help": "gpt2 no flash attention2"}

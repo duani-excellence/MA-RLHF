@@ -117,7 +117,7 @@ def preprocess_function_hhrlhf(examples):
     return new_examples
 
 # Skepsun/cvalues_rlhf
-def preprocess_function_cvalues(examples):
+def preprocess_function_dpo(examples):
         new_examples = {
             "prompt": [],
             "chosen": [],
@@ -152,8 +152,9 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
     func = None
     if 'hh-rlhf' in dataset_name: # Anthropic/hh-rlhf
         func = preprocess_function_hhrlhf
-    elif 'cvalues' in dataset_name: # PKU-Alignment/PKU-SafeRLHF-10K
-        func = preprocess_function_cvalues
+    # elif 'cvalues' in dataset_name:
+    else:
+        func = preprocess_function_dpo
 
 
     train_dataset = train_dataset.map(

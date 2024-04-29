@@ -24,15 +24,21 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 
-tokenizer.eos_token = DEFINE_EOS_TOKEN
-tokenizer.pad_token = tokenizer.eos_token
-tokenizer.pad_token_id = tokenizer.eos_token_id
-model.config.pad_token = DEFINE_EOS_TOKEN
-model.config.pad_token_id = tokenizer.eos_token_id
+# tokenizer.eos_token = DEFINE_EOS_TOKEN
+# tokenizer.pad_token = tokenizer.eos_token
+# tokenizer.pad_token_id = tokenizer.eos_token_id
+# model.config.pad_token = DEFINE_EOS_TOKEN
+# model.config.pad_token_id = tokenizer.eos_token_id
+
+terminators = [
+    tokenizer.eos_token_id,
+    tokenizer.convert_tokens_to_ids("<|eot_id|>"),
+    tokenizer.convert_tokens_to_ids("<|end_of_text|>"),
+]
 
 input = format_prompt(instruction)
 inputs = tokenizer(input, return_tensors='pt').to(device)
-output = model.generate(inputs['input_ids'],max_new_tokens=max_new_tokens, do_sample=False)
-output = tokenizer.decode(output[0], skip_special_tokens=True)
+output = model.generate(inputs['input_ids'],max_new_tokens=max_new_tokens, do_sample=False, eos_token_id=terminators,)
+output = tokenizer.decode(output[0], skip_special_tokens=False)
 
 print(output)
