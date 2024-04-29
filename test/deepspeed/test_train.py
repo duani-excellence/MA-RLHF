@@ -43,6 +43,8 @@ def get_data_loader(model, total_samples, hidden_dim, device):
     batch_size = model.train_micro_batch_size_per_gpu()
     train_data = torch.randn(total_samples, hidden_dim, device=device, dtype=torch.half)
     train_label = torch.empty(total_samples, dtype=torch.long, device=device).random_(hidden_dim)
+    print(train_data.shape)
+    print(train_label.shape)
     train_dataset = torch.utils.data.TensorDataset(train_data, train_label)
     sampler = DistributedSampler(train_dataset)
     train_loader = torch.utils.data.DataLoader(
@@ -115,6 +117,7 @@ def print_params(tag, model):
 data_loader = get_data_loader(
     model=model, total_samples=256, hidden_dim=hidden_dim, device=model.device
 )
+# data_loader.
 print_params('pre-train', model)
 
 for n, batch in enumerate(data_loader):

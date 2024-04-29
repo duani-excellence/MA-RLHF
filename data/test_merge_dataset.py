@@ -1,8 +1,10 @@
 
 from datasets import load_dataset, concatenate_datasets, DatasetDict
-import pprint
 
-data_name1 = 'silk-road/alpaca-data-gpt4-chinese'
+# we cloud produce mix dataset like 'fireinwind/GPT4_Instinwild_belle_cn_school_math_zdmqa'
+
+
+data_name1 = 'xiaodongguaAIGC/alpaca_gpt4_data_zh' # ignore
 data_name2 = 'vicgalle/alpaca-gpt4'
 data_name3 = 'LooksJuicy/ruozhiba'
 
@@ -19,15 +21,22 @@ print(dataset1['train'])
 print(dataset2['train'])
 
 
+#
 # process dataset1
-def process_fn(examples):
-    examples['instruction']=examples['instruction_zh']
-    examples['input']=examples['input_zh']
-    examples['output']=examples['output_zh']
-    return examples
-dataset1 = dataset1.map(process_fn, num_proc=8, remove_columns = ["instruction_zh", "input_zh", 'output_zh'])
-dataset1['train'] = dataset1['train'].shard(num_shards=10, index=0)
-print(dataset1)
+# data_name1 = 'silk-road/alpaca-data-gpt4-chinese' # ignore
+# dataset1 = load_dataset(data_name1)
+# def process_fn(examples):
+#     examples['instruction']=examples['instruction_zh']
+#     examples['input']=examples['input_zh']
+#     examples['output']=examples['output_zh']
+#     return examples
+# dataset1 = dataset1.map(process_fn, num_proc=8, remove_columns = ["instruction_zh", "input_zh", 'output_zh'])
+# dataset1['train'] = dataset1['train'].shard(num_shards=10, index=0)
+# print(dataset1)
+dataset1 = load_dataset(data_name1)
+# dataset1['train'] = dataset1['train'].shard(num_shards=5, index=0) # 将一份数据切成5份，取1份
+dataset1['train'] = dataset1['train'] # 全部取
+
 
 # process dataset2
 dataset2 = dataset2.remove_columns([
@@ -56,3 +65,5 @@ for i in range(20):
     print('input: ', dataset['train']['input'][i])
     print('output: ', dataset['train']['output'][i])
 dataset.save_to_disk('./output/merge_alpaca_dataset')
+
+# and then use dataset_upload.ipynb
