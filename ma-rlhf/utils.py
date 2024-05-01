@@ -20,7 +20,7 @@ from transformers import (
 # SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
 DEFINE_EOS_TOKEN = '''<|end_of_text|>'''
 DEFINE_BOS_TOKEN = '''<|begin_of_text|>'''
-SYSTEM_PROMPT = '''你是一个友好的中文对话机器人。'''
+SYSTEM_PROMPT = '''Your are MA-RLHF Chatbot, you should friendly answer the question'''
 
 
 
@@ -151,10 +151,10 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "for test generation"})
 
     learning_rate: Optional[float] = field(
-        default=1.41e-5, metadata={"help": "todo: the learning rate,"}
+        default=5e-6, metadata={"help": "todo: the learning rate,"}
     )
 
-    seq_length: Optional[int] = field(default=512, metadata={"help": "context max length"})
+    seq_length: Optional[int] = field(default=1024, metadata={"help": "context max length"})
 
     max_new_tokens: Optional[int] = field(default=128, metadata={"help": "max generate tokens"})
 
@@ -187,7 +187,7 @@ class ScriptArguments:
     use_QLora: Optional[bool] = field(default=False, metadata={"help": "todo optional"})
 
     use_flash_attention_2: Optional[bool] = field(
-        default=True, metadata={"help": "gpt2 no flash attention2"}
+        default=False, metadata={"help": "gpt2 no flash attention2"}
     )
 
     merge_checkpoint_type: Optional[str] = field(default='LM', metadata={"help": "merge check point"})
@@ -200,7 +200,7 @@ def format_prompt_answer(question, answer):
 
 
 def format_prompt(question):
-    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer:"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer: "
 
 
 # medical finetune data haven't 'input', only has 'instruction'

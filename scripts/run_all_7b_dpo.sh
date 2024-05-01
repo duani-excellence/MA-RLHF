@@ -1,18 +1,19 @@
 # 完整运行
 
 base_model_path='meta-llama/Meta-Llama-3-8B'
+# base_model_path='/data/align_workspace/dh/output/sft_lora'
 deepspeed_config_name=./config/ds.json
 output_path='/data/align_workspace/dh/output'
 
 model_pretrained_lora_path=${output_path}'/pretrained_lora'
 model_pretrained_full_path=${output_path}'/pretrained_full'
-model_sft_lora_path=${output_path}'/sft_lora'
-model_sft_full_path=${output_path}'/sft_full'
-model_reward_model_lora_path=${output_path}'/reward_model_lora'
-model_ppo_lora_path=${output_path}'/ppo_lora'
-model_ppo_full_path=${output_path}'/ppo_full'
-model_dpo_lora_path=${output_path}'/dpo_lora'
-model_dpo_full_path=${output_path}'/dpo_full'
+model_sft_lora_path=${output_path}'/sft_lora1'
+model_sft_full_path=${output_path}'/sft_full1'
+# model_reward_model_lora_path=${output_path}'/reward_model_lora'
+# model_ppo_lora_path=${output_path}'/ppo_lora'
+# model_ppo_full_path=${output_path}'/ppo_full'
+# model_dpo_lora_path=${output_path}'/dpo_lora'
+# model_dpo_full_path=${output_path}'/dpo_full'
 
 
 
@@ -28,22 +29,19 @@ model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft.py \
 	--dataset_name=${sft_dataset_name} \
 	--model_name=${model_pretrained_full_path} \
-	--seq_length=512 \
+	--seq_length=1024 \
 	--output_name=${model_sft_lora_path} \
 	--use_QLora=False \
-	--batch_size=8 \
+	--batch_size=4 \
 	--use_flash_attention_2=False \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=1 \
-	--gradient_accumulation_steps=4 \
-	--learning_rate=1e-5
+	--num_train_epochs=2 \
+	--gradient_accumulation_steps=8 \
+	--learning_rate=5e-5
+
+# python ${model_sft_lora_path}/zero_to_fp16.py  ${model_sft_lora_path} ${model_sft_lora_path}/pytorch_model.bin
 
 
-# merge zero3 checkpoint to lora parameter
-python ./ma-rlhf/merge_checkpoint.py \
-	--base_model_name=${model_pretrained_full_path} \
-	--model_name=${model_sft_lora_path} \
-	--merged_model_name=${model_sft_lora_path}
 
 # # merge SFT
 # python ./ma-rlhf/merge_adapter.py \
@@ -77,7 +75,7 @@ python ./ma-rlhf/merge_checkpoint.py \
 #  	--model_name=${model_dpo_lora_path} \
 #  	--merged_model_name=${model_dpo_full_path}
 
-
+model_sft_full_path=${model_sft_lora_path}
  # generate result
  echo "------------------print sft result------------------"
  python ./ma-rlhf/generate.py \

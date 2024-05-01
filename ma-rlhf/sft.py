@@ -94,9 +94,9 @@ def create_model_tokenizer(name):
     device_map = {"": Accelerator().local_process_index}
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config if not is_peft else None,
+        # quantization_config=bnb_config if not is_peft else None,
         device_map=device_map,
-        use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
+        # use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
     )
@@ -158,7 +158,7 @@ def train():
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
-        learning_rate=learning_rate,
+        learning_rate=5e-5,
         warmup_ratio=0.03,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,

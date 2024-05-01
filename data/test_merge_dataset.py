@@ -50,7 +50,7 @@ print(dataset2)
 def process_ruozhiba(examples):
     examples['input'] = ''
     return examples
-dataset3.map(process_ruozhiba, num_proc=8)
+dataset3 = dataset3.map(process_ruozhiba, num_proc=8)
 print(dataset3)
 
 
