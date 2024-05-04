@@ -74,6 +74,7 @@ def create_model_tokenizer(name):
     tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
     model.pad_token_id = tokenizer.pad_token_id
     model.pad_token = tokenizer.pad_token
+    model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 

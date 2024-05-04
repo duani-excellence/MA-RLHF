@@ -11,6 +11,8 @@ from utils import (
     create_peft_reward_model,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    format_prompt_answer,
+    SYSTEM_PROMPT,
 )
 from transformers import (
     AutoTokenizer,
@@ -65,17 +67,17 @@ def create_model_tokenizer(name):
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.eos_token = DEFINE_EOS_TOKEN
+    # tokenizer.pad_token = tokenizer.eos_token
+    # tokenizer.eos_token = DEFINE_EOS_TOKEN
     # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
-    model.config.pad_token_id = model.config.eos_token_id
+    # model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-tokenizer.pad_token = tokenizer.eos_token
-tokenizer.eos_token = DEFINE_EOS_TOKEN
+# tokenizer.pad_token = tokenizer.eos_token
+# tokenizer.eos_token = DEFINE_EOS_TOKEN
 
 # for prompt, chosen, rejected
 def preprocess_function(examples):
@@ -88,12 +90,16 @@ def preprocess_function(examples):
     for question, response_j, response_k in zip(
         examples["question"], examples["response_chosen"], examples["response_rejected"]
     ):
+
+        str_chosen = format_prompt_answer(question, response_j)
+        str_rejected = format_prompt_answer(question, response_k)
+
         tokenized_j = tokenizer(
-            f"###Question: {question}\n###Answer:{response_j} {tokenizer.eos_token}",
+            str_chosen,
             truncation=True,
         )
         tokenized_k = tokenizer(
-            f"###Question: {question}\n###Answer:{response_k} {tokenizer.eos_token}",
+            str_rejected,
             truncation=True,
         )
 
@@ -137,14 +143,16 @@ def preprocess_function_safe_rlhf(examples):
             response_chosen = response_0 if better_id == 0 else response_1
             response_rejected = response_1 if better_id == 0 else response_0
 
+        str_chosen = format_prompt_answer(question, response_chosen)
+        str_rejected = format_prompt_answer(question, response_rejected)
 
         tokenized_chosen = tokenizer(
-            f"###Question: {question}\n###Answer:{response_chosen} {tokenizer.eos_token}",
+            str_chosen,
             truncation=True,
             padding='longest',
         )
         tokenized_rejected = tokenizer(
-            f"###Question: {question}\n###Answer:{response_rejected} {tokenizer.eos_token}",
+            str_rejected,
             truncation=True,
             padding='longest',
         )
@@ -176,12 +184,15 @@ def preprocess_function_hhrlhf(examples):
         prompt_rejected = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_rejected)
         prompt_rejected = prompt_rejected[1:] # ignore first \n
 
+        prompt_chosen = f'###System: {SYSTEM_PROMPT}\n{prompt_chosen}'
+        prompt_rejected = f'###System: {SYSTEM_PROMPT}\n{prompt_rejected}'
+
         tokenized_j = tokenizer(
-            f"{prompt_chosen} {tokenizer.eos_token}",
+            prompt_chosen,
             truncation=True,
         )
         tokenized_k = tokenizer(
-            f"{prompt_rejected} {tokenizer.eos_token}",
+            prompt_rejected,
             truncation=True,
         )
 

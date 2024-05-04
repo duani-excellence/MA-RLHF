@@ -12,6 +12,7 @@ from utils import (
     DEFINE_EOS_TOKEN,
     create_peft,
     format_prompt,
+    SYSTEM_PROMPT,
 )
 from transformers import (
     AutoTokenizer,
@@ -72,18 +73,17 @@ def create_model_tokenizer(name):
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, model_max_length=seq_length,
         trust_remote_code=True,)
 
-    tokenizer.eos_token = DEFINE_EOS_TOKEN
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-    model.config.pad_token_id = tokenizer.eos_token_id
-    model.config.pad_token = tokenizer.eos_token
+    tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
+    model.pad_token_id = tokenizer.pad_token_id
+    model.pad_token = tokenizer.pad_token
+
 
     return model, tokenizer
 
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-tokenizer.eos_token = DEFINE_EOS_TOKEN
-tokenizer.pad_token = tokenizer.eos_token
+# tokenizer.eos_token = DEFINE_EOS_TOKEN
+# tokenizer.pad_token = tokenizer.eos_token
 
 
 # Anthropic/hh-rlhf
@@ -106,9 +106,10 @@ def preprocess_function_hhrlhf(examples):
         prompt_rejected = prompt_rejected[1:] # ignore first \n
 
         prompt_question = prompt_chosen.rsplit('\n###Answer:',1)[0] + '\n###Answer:'
+        prompt_question = f'###System: {SYSTEM_PROMPT}\n{prompt_question}' # add system prompt
+
         response_chosen = prompt_chosen.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
         response_rejected = prompt_rejected.rsplit('\n###Answer:',1)[1] + ' ' + DEFINE_EOS_TOKEN
-        # print(f'[prompt]:{prompt_question}\n[chosen]{response_chosen}\n[rejected]{response_rejected}')
 
         new_examples['prompt'].append(prompt_question)
         new_examples['chosen'].append(response_chosen)
@@ -207,7 +208,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        max_steps=10,
+        # max_steps=10,
     )
 
     trainer = DPOTrainer(

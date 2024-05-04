@@ -14,6 +14,7 @@ from utils import (
     ScriptArguments,
     DEFINE_EOS_TOKEN,
     format_prompt,
+    SYSTEM_PROMPT,
 )
 import time
 
@@ -65,10 +66,10 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
         model_name, use_fast=True,
         trust_remote_code=True,
     )
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.eos_token = DEFINE_EOS_TOKEN
-    # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
-    model.config.pad_token_id = model.config.eos_token_id
+    # tokenizer.pad_token = tokenizer.eos_token
+    # tokenizer.eos_token = DEFINE_EOS_TOKEN
+    # # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
+    # model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 
@@ -102,6 +103,9 @@ def create_dataset(dataset_name, tokenizer):
             prompt_chosen = prompt_chosen.rsplit('\n###Answer:',1)[0]
             prompt_chosen = prompt_chosen[1:] # skip first \n
             query = prompt_chosen + '\n###Answer:'
+
+            # add system prompt
+            query = f'###System: {SYSTEM_PROMPT}\n{query}'
 
             # TODO:truncation Answer Process
             tokenized_question = tokenizer(query, return_tensors='pt')
