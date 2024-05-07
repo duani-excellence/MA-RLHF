@@ -10,6 +10,7 @@ from utils import (
     create_peft_reward_model,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    DEFINE_PAD_TOKEN,
     create_peft,
     format_prompt,
     SYSTEM_PROMPT,
@@ -45,14 +46,14 @@ learning_rate = train_args.learning_rate
 use_qlora_double_quant = train_args.use_qlora_double_quant
 
 
-accuracy = evaluate.load("accuracy")
-def compute_metrics(eval_pred):
-    predictions, _ = eval_pred
-    # Here, predictions is rewards_j and rewards_k.
-    # We want to see how much of the time rewards_j > rewards_k.
-    predictions = np.argmax(predictions, axis=0)
-    labels = np.zeros(predictions.shape)
-    return accuracy.compute(predictions=predictions, references=labels)
+# accuracy = evaluate.load("accuracy")
+# def compute_metrics(eval_pred):
+#     predictions, _ = eval_pred
+#     # Here, predictions is rewards_j and rewards_k.
+#     # We want to see how much of the time rewards_j > rewards_k.
+#     predictions = np.argmax(predictions, axis=0)
+#     labels = np.zeros(predictions.shape)
+#     return accuracy.compute(predictions=predictions, references=labels)
 
 
 def create_model_tokenizer(name):
@@ -208,7 +209,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        # max_steps=10,
+        # max_steps=100,
     )
 
     trainer = DPOTrainer(

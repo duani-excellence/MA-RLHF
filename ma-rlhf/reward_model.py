@@ -11,6 +11,7 @@ from utils import (
     create_peft_reward_model,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    DEFINE_PAD_TOKEN,
     format_prompt_answer,
     SYSTEM_PROMPT,
 )
@@ -38,14 +39,14 @@ num_train_epochs = train_args.num_train_epochs
 gradient_accumulation_steps = train_args.gradient_accumulation_steps
 learning_rate = train_args.learning_rate
 
-accuracy = evaluate.load("accuracy")
-def compute_metrics(eval_pred):
-    predictions, _ = eval_pred
-    # Here, predictions is rewards_j and rewards_k.
-    # We want to see how much of the time rewards_j > rewards_k.
-    predictions = np.argmax(predictions, axis=0)
-    labels = np.zeros(predictions.shape)
-    return accuracy.compute(predictions=predictions, references=labels)
+# accuracy = evaluate.load("accuracy")
+# def compute_metrics(eval_pred):
+#     predictions, _ = eval_pred
+#     # Here, predictions is rewards_j and rewards_k.
+#     # We want to see how much of the time rewards_j > rewards_k.
+#     predictions = np.argmax(predictions, axis=0)
+#     labels = np.zeros(predictions.shape)
+#     return accuracy.compute(predictions=predictions, references=labels)
 
 
 def create_model_tokenizer(name):
@@ -284,7 +285,7 @@ def train():
         args=reward_config,
         train_dataset=train_datasets,
         # eval_dataset=test_datasets,
-        compute_metrics=compute_metrics,
+        # compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         peft_config=peft_config,
     )

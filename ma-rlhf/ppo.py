@@ -13,6 +13,7 @@ from utils import (
     is_main_process,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    DEFINE_PAD_TOKEN,
     format_prompt,
     SYSTEM_PROMPT,
 )
@@ -57,7 +58,7 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
         peft_config=peft_config,
         reward_adapter=rm_model_name,
         device_map=device_map,  # 70b use 'auto' would auto shard parameter
-        use_flash_attention_2=True,
+        use_flash_attention_2=is_use_flash_attention2,
         trust_remote_code=True,
         # low_cpu_mem_usage=True,
     )

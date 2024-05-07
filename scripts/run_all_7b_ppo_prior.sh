@@ -1,6 +1,6 @@
 deepspeed_config_name='./config/ds.json'
 output_path='./output'
-sft_path='./output/dpo_full' # Use dpo_full or sft_full
+sft_path='./output/sft_full'
 
 model_sft_full_path=${sft_path}
 model_reward_model_lora_path=${output_path}'/reward_model_lora'
@@ -22,7 +22,7 @@ deepspeed ./ma-rlhf/reward_model.py \
 	--batch_size=16 \
 	--output_name=${model_reward_model_lora_path} \
 	--use_QLora=True \
-	--use_flash_attention_2=True \
+	--use_flash_attention_2=False \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--num_train_epochs=2 \
 	--gradient_accumulation_steps=2 \
@@ -45,7 +45,7 @@ deepspeed ./ma-rlhf/ppo.py \
 	--reward_model_name=${model_reward_model_lora_path} \
 	--output_name=${model_ppo_lora_path} \
 	--use_QLora=True \
-	--use_flash_attention_2=True \
+	--use_flash_attention_2=False \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--batch_size=16 \
 	--mini_batch_size=1 \
