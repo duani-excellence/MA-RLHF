@@ -1,3 +1,4 @@
+# 此脚本已废弃
 base_model_path='meta-llama/Llama-2-7b-hf'
 deepspeed_config_name=./config/ds.json
 output_path='./output/ppo'

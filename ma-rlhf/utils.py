@@ -15,9 +15,13 @@ from transformers import (
     HfArgumentParser,
 )
 
-DEFINE_EOS_TOKEN = '''</s>'''
-DEFINE_BOS_TOKEN = '''<s>'''
-SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
+# DEFINE_EOS_TOKEN = '''</s>'''
+# DEFINE_BOS_TOKEN = '''<s>'''
+# SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
+DEFINE_BOS_TOKEN = '''<|begin_of_text|>'''
+DEFINE_EOS_TOKEN = '''<|end_of_text|>'''
+DEFINE_PAD_TOKEN = '''<|reserved_special_token_0|>'''
+SYSTEM_PROMPT = '''Your are MA-RLHF Chatbot, you should friendly answer the question'''
 
 
 
@@ -148,10 +152,10 @@ class ScriptArguments:
     prompt: Optional[str] = field(default="", metadata={"help": "for test generation"})
 
     learning_rate: Optional[float] = field(
-        default=1.41e-5, metadata={"help": "todo: the learning rate,"}
+        default=5e-6, metadata={"help": "todo: the learning rate,"}
     )
 
-    seq_length: Optional[int] = field(default=512, metadata={"help": "context max length"})
+    seq_length: Optional[int] = field(default=1024, metadata={"help": "context max length"})
 
     max_new_tokens: Optional[int] = field(default=128, metadata={"help": "max generate tokens"})
 
@@ -181,10 +185,10 @@ class ScriptArguments:
 
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
 
-    use_QLora: Optional[bool] = field(default=True, metadata={"help": "todo optional"})
+    use_QLora: Optional[bool] = field(default=False, metadata={"help": "todo optional"})
 
     use_flash_attention_2: Optional[bool] = field(
-        default=True, metadata={"help": "gpt2 no flash attention2"}
+        default=False, metadata={"help": "gpt2 no flash attention2"}
     )
 
     merge_checkpoint_type: Optional[str] = field(default='LM', metadata={"help": "merge check point"})
@@ -193,41 +197,48 @@ class ScriptArguments:
 
 def format_prompt_answer(question, answer):
     '''for generation'''
-    return f"###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
 
 
 def format_prompt(question):
-    return f"###Question: {question}\n###Answer:"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer: "
 
 
 # medical finetune data haven't 'input', only has 'instruction'
 def formatting_finetune_func(example):
-    text = f"###Question: {example['instruction']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
+    text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
     return text
 
 
-def formatting_reward_func(example):
-    text = f"###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
-    return text
+# def formatting_reward_func(example):
+#     text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
+#     return text
+
+
+
+# def formatting_reward_func(example):
+#     text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
+#     return text
+
 
 def formatting_alpaca_func_bached(example):
     output_text = []
     for i, instruction in enumerate(example["instruction"]):
-        text = f"###Question: {instruction} {example['input'][i]}\n###Answer: {example['output'][i]} {DEFINE_EOS_TOKEN}"
+        text = f"###System: {SYSTEM_PROMPT}\n###Question: {instruction} {example['input'][i]}\n###Answer: {example['output'][i]} {DEFINE_EOS_TOKEN}"
         output_text.append(text)
     return output_text
 
 def formatting_alpaca_func(example):
-    return f"###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
 
 
 def formatting_alpaca_chinese_func(example):
-    return f"###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
 
-def formatting_hhrlhf_func(example):
-    random_int = random.randint(0, 1)
-    random_choice = bool(random_int)
-    text = example["chosen"] if random_choice == True else example["rejected"]
-    text = re.sub(r'\n\nHuman:', '\n###Question:', text)
-    text = re.sub(r'\n\nAssistant:', '\n###Answer:', text)
-    text = text[1:] + ' ' + {DEFINE_EOS_TOKEN}
+# def formatting_hhrlhf_func(example):
+#     random_int = random.randint(0, 1)
+#     random_choice = bool(random_int)
+#     text = example["chosen"] if random_choice == True else example["rejected"]
+#     text = re.sub(r'\n\nHuman:', '\n###Question:', text)
+#     text = re.sub(r'\n\nAssistant:', '\n###Answer:', text)
+#     text = text[1:] + ' ' + {DEFINE_EOS_TOKEN}

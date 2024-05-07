@@ -23,6 +23,7 @@ from transformers import (
 from utils import (
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    DEFINE_PAD_TOKEN,
     formatting_alpaca_func,
     formatting_alpaca_func_bached,
     is_main_process,
@@ -47,42 +48,6 @@ learning_rate = train_args.learning_rate
 
 def create_datasets(dataset_name, dataset_sub_name):
     dataset = load_dataset(dataset_name)
-
-    # merge two data
-    is_merge_datasets = False
-    if is_merge_datasets:
-        dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train')
-        # dataset_hhrlhf = load_dataset('Anthropic/hh-rlhf', split='train[:50000]')
-        def format_hhrlhf_to_alpaca(example):
-            '''
-            alpaca format : {instruction}, {input}, {output}
-            hh rlhf format : {chosen}, {rejected}
-                chosen: \n\nHuman: 11\n\nAssistant: 22 \n\nHuman: 33\n\nAssistant: 44
-            target format is
-                chosen: \n###Question: 11\n###Answer: 22 \n### Question 33\n###Answer: 44
-                -> instruction: 【11\n###Answer: 22 \n### Question 33】
-                -> output: 【 44】
-            '''
-            text = example["chosen"]
-            text = re.sub(r'\n\nHuman:', '\n###Question:', text)
-            text = re.sub(r'\n\nAssistant:', '\n###Answer:', text)
-            text = text[1:]
-
-            instruction = text.rsplit('\n###Answer:',1)[0]
-            instruction = instruction.split('###Question:',1)[1]
-            output = text.rsplit('\n###Answer:',1)[1]
-
-            example['input'] = ''
-            example['output'] = output
-            example['instruction'] = instruction
-
-            return example
-
-        dataset_hhrlhf = dataset_hhrlhf.map(format_hhrlhf_to_alpaca, num_proc=8, remove_columns = ["chosen", "rejected"])
-        dataset = concatenate_datasets([dataset['train'], dataset_hhrlhf])
-        dataset = DatasetDict({'train': dataset})
-        dataset = dataset.shuffle(seed=42)
-
     return dataset, None
 
 
@@ -94,22 +59,22 @@ def create_model_tokenizer(name):
     device_map = {"": Accelerator().local_process_index}
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config,
+        # quantization_config=bnb_config if not is_peft else None,
         device_map=device_map,
-        use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
+        # use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
         trust_remote_code=True,
+        torch_dtype=torch.bfloat16,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                 trust_remote_code=True,
-                                                # padding_side='left',
+                                                padding_side='left',
                                                 # model_max_length=1024
                                                 )
-    tokenizer.eos_token = DEFINE_EOS_TOKEN
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-    model.config.pad_token_id = tokenizer.eos_token_id
-    model.config.pad_token = tokenizer.eos_token
+    tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
+    model.pad_token_id = tokenizer.pad_token_id
+    model.pad_token = tokenizer.pad_token
+    model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 
@@ -152,13 +117,13 @@ def train():
 
     training_args = TrainingArguments(
         output_dir=output_name,
-        save_strategy='no',
+        save_strategy='epoch',
         logging_steps=1,
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=learning_rate,
-        warmup_ratio=0.03,
+        warmup_ratio=0.1,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,

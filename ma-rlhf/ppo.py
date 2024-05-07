@@ -13,7 +13,9 @@ from utils import (
     is_main_process,
     ScriptArguments,
     DEFINE_EOS_TOKEN,
+    DEFINE_PAD_TOKEN,
     format_prompt,
+    SYSTEM_PROMPT,
 )
 import time
 
@@ -56,18 +58,20 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
         peft_config=peft_config,
         reward_adapter=rm_model_name,
         device_map=device_map,  # 70b use 'auto' would auto shard parameter
-        use_flash_attention_2=True,
+        use_flash_attention_2=is_use_flash_attention2,
         trust_remote_code=True,
         # low_cpu_mem_usage=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name, use_fast=True,
+        model_name,
+        # use_fast=True,
         trust_remote_code=True,
     )
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.eos_token = DEFINE_EOS_TOKEN
-    # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
+    tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
+    model.pad_token_id = tokenizer.pad_token_id
+    model.pad_token = tokenizer.pad_token
+    model.pad_token_id = tokenizer.pad_token_id
     model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
@@ -102,6 +106,9 @@ def create_dataset(dataset_name, tokenizer):
             prompt_chosen = prompt_chosen.rsplit('\n###Answer:',1)[0]
             prompt_chosen = prompt_chosen[1:] # skip first \n
             query = prompt_chosen + '\n###Answer:'
+
+            # add system prompt
+            query = f'###System: {SYSTEM_PROMPT}\n{query}'
 
             # TODO:truncation Answer Process
             tokenized_question = tokenizer(query, return_tensors='pt')
@@ -152,7 +159,8 @@ def train():
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
-        "forced_eos_token_id": True,
+        "forced_eos_token_id": tokenizer.eos_token_id, # class ForcedEOSTokenLogitsProcessor(LogitsProcessor) from transformers
+        # "forced_eos_token_id": True,
     }
     output_length_sampler = LengthSampler(128, output_max_length)
 
