@@ -116,7 +116,7 @@ Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora o
 ├── run_7b_sft_full.sh #[必跑] 可以全参也可以Qlora
 ├── run_7b_dpo.sh #[必跑]
 ├── run_7b_ppo.sh #[必跑] 包含reward和ppo训练
-├── run_generation_examples # 生成测试脚本
+├── run_generation_examples.sh # 生成测试脚本
 ├── run_70b_dpo.sh # 70B SFT+DPO
 ├── run_70b_ppo_prior.sh # (A100 40G 未调通) 70B Reward Model + PPO
 ├── run_7b_cpt.sh # 二次预训练
@@ -136,7 +136,7 @@ Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora o
 Under non-sufficient training conditions, our test results
 
 ```bash
-bash ./scripts/run_7b_ppo.sh ./output/ppo_full 512
+bash ./scripts/run_generation_examples.sh ./output/ppo_full 512
 ```
 
 #### example instrction
