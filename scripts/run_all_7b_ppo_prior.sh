@@ -22,7 +22,7 @@ deepspeed ./ma-rlhf/reward_model.py \
 	--batch_size=16 \
 	--output_name=${model_reward_model_lora_path} \
 	--use_QLora=True \
-	--use_flash_attention_2=False \
+	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--num_train_epochs=2 \
 	--gradient_accumulation_steps=2 \
@@ -45,7 +45,7 @@ deepspeed ./ma-rlhf/ppo.py \
 	--reward_model_name=${model_reward_model_lora_path} \
 	--output_name=${model_ppo_lora_path} \
 	--use_QLora=True \
-	--use_flash_attention_2=False \
+	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--batch_size=16 \
 	--mini_batch_size=1 \

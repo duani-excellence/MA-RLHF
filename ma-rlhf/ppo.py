@@ -64,13 +64,15 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_name, use_fast=True,
+        model_name,
+        # use_fast=True,
         trust_remote_code=True,
     )
-    # tokenizer.pad_token = tokenizer.eos_token
-    # tokenizer.eos_token = DEFINE_EOS_TOKEN
-    # # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
-    # model.config.pad_token_id = model.config.eos_token_id
+    tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
+    model.pad_token_id = tokenizer.pad_token_id
+    model.pad_token = tokenizer.pad_token
+    model.pad_token_id = tokenizer.pad_token_id
+    model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 
@@ -157,7 +159,8 @@ def train():
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
-        "forced_eos_token_id": True,
+        "forced_eos_token_id": tokenizer.eos_token_id, # class ForcedEOSTokenLogitsProcessor(LogitsProcessor) from transformers
+        # "forced_eos_token_id": True,
     }
     output_length_sampler = LengthSampler(128, output_max_length)
 
