@@ -15,24 +15,6 @@ Feature：
 - 💻 70B RLHF： complete SFT/DPO, reward PPO comming soon
 - 🦙 **Llama-3-8B : Full-parameter SFT, DPO, reward model, PPO**
 
-## Result
-
-Environment 8x3090
-
-|            | 8xA800    | 8xA800         | 8xA800    | 8x3090     | 8x3090      |
-| ---------- | --------- | -------------- | --------- | ---------- | ----------- |
-| VRAM       | 40GB      | 40GB           | 40GB      | 24GB       | 24GB        |
-| Model      | LLaMA2-7B | LLaMA-2-13B    | LLaMA2-7B | LLaMA-2-7B | LLaMA-2-13B |
-| ZeRO       | 1         | 1              | 1         |            |             |
-| Epochs     | 1         | 2              | 1         |            |             |
-| Pretrained | 20min     | /              | 20min     |            |             |
-| SFT        | 20min     | 20min          |           |            |             |
-| Reward     | 1h20min   | 10h            |           |            |             |
-| PPO        | 1h30min   | 3.5day(1pochs) |           |            |             |
-| DPO        |           |                | 30min     |            |             |
-| VRAM       | 22GB      | 35GB           | 22GB/40GB |            | ZeRO-3      |
-| Total      | 3h30min   | 4day           | **1h**    |            |             |
-
 ## MA-RLHF Pipeline & Dataset
 
 - `Pretrained`: imdb, 20k
@@ -41,7 +23,7 @@ Environment 8x3090
 - `Reward Model`: SAFE-RLHF, 10k
 - `PPO`: SAFE-RLHF 10k
 
-If you want to custom youself dataset, read
+If you want to custom your dataset, read
 
 - `./data`
 - `./ma-rlhf/util.py`  custom your special prompt template
