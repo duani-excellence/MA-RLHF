@@ -42,3 +42,7 @@ deepspeed ./test/deepspeed/test_linear_stage3.py
    - PIPE
    - Megatron
    - 多节点并行
+
+
+# ref
+https://github.com/rentainhe/pytorch-distributed-training
