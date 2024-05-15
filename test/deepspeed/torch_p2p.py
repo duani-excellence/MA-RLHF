@@ -76,7 +76,7 @@ def run(rank, size):
 
 
 
-def init_processes(rank, size, fn, backend='gloo'):
+def init_processes(rank, size, fn, backend='nccl'):
     """ Initialize the distributed environment. """
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'

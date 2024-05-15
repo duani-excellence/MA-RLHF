@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# torchrun  --nnodes=1 --nproc_per_node=2 ./test/deepspeed/torch_ring_allreduce.py
+# torchrun  --nnodes=1 --nproc_per_node=2 ./test/deepspeed/torch_ring_allreduce_gloo.py
 import os
 import torch as th
 import torch.distributed as dist
@@ -35,13 +35,13 @@ def allreduce(send, recv):
 def run(rank, size):
     """ Distributed function to be implemented later. """
 #    t = th.ones(2, 2)
-    t = th.rand(2, 2).to(rank)
+    t = th.rand(2, 2)
     print(t)
     # for _ in range(10000000):
     for _ in range(4):
         c = t.clone()
-        dist.all_reduce(c, dist.reduce_op.SUM)
-        # allreduce(t, c)
+        # dist.all_reduce(c, dist.reduce_op.SUM)
+        allreduce(t, c)
         t.set_(c)
     print(t)
 
@@ -56,7 +56,7 @@ def run(rank, size):
 
 if __name__ == "__main__":
     # def setup():
-    dist.init_process_group('nccl')
+    dist.init_process_group('gloo')
     rank = dist.get_rank()
     size = dist.get_world_size()
     run(rank, size)

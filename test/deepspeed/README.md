@@ -1,5 +1,7 @@
 # Deepspeed 实操test
 
+[!note]: 该文件夹目录程序在开发中，暂不用调试
+
 - 目标能够基于Deepspeed接口，实现 GPT2 的多卡全参Pretrained训练
 - 基于Deepspeed接口，分析deepspeed实现
 
