@@ -1,4 +1,6 @@
 # https://pytorch.org/tutorials/intermediate/TP_tutorial.html
+# ref https://github.com/pytorch/pytorch/issues/119937
+# torchrun  --nnodes=1 --nproc_per_node=2 ./test/deepspeed/torch_fsdp_tp.py
 
 import sys
 import os
@@ -7,15 +9,17 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 
-from log_utils import rank_log, get_logger, verify_min_gpu_count
+from torch.distributed._tensor import DeviceMesh, Shard, DTensor, Placement
+
+# from log_utils import rank_log, get_logger, verify_min_gpu_count
 
 # ---- GPU check ------------
-_min_gpu_count = 4
+_min_gpu_count = 2
 
-if not verify_min_gpu_count(min_gpus=_min_gpu_count):
-    print(f"Unable to locate sufficient {_min_gpu_count} gpus to run this example. Exiting.")
-    sys.exit()
-# ---------------------------
+# if not verify_min_gpu_count(min_gpus=_min_gpu_count):
+#     print(f"Unable to locate sufficient {_min_gpu_count} gpus to run this example. Exiting.")
+#     sys.exit()
+# # ---------------------------
 
 from llama2_model import Transformer, ModelArgs
 
@@ -63,7 +67,7 @@ https://pytorch.org/tutorials/intermediate/TP_tutorial.html
 """
 
 tp_size = 2
-logger = get_logger()
+# logger = get_logger()
 
 # understand world topology
 _rank = int(os.environ["RANK"])
@@ -84,7 +88,7 @@ dp_size = _world_size // tp_size
 # Second dim is the tensor parallel dimension.
 device_mesh = init_device_mesh("cuda", (dp_size, tp_size), mesh_dim_names=("dp", "tp"))
 
-rank_log(_rank, logger, f"Device Mesh created: {device_mesh=}")
+# rank_log(_rank, logger, f"Device Mesh created: {device_mesh=}")
 tp_mesh = device_mesh["tp"]
 dp_mesh = device_mesh["dp"]
 
@@ -102,14 +106,19 @@ model = Transformer.from_model_args(simple_llama2_config).to("cuda")
 # init model weights
 model.init_weights()
 
+print(model)
+
 # parallelize the first embedding and the last linear out projection
 model = parallelize_module(
     model,
     tp_mesh,
     {
-        "tok_embeddings": RowwiseParallel(
-            input_layouts=Replicate(),
-        ),
+        # "tok_embeddings": RowwiseParallel(
+        #     input_layouts=Replicate(),
+        #     # input_layouts=Shard(1),
+        #     output_layouts=Shard(1),
+
+        # ),
         "output": ColwiseParallel(input_layouts=Shard(1), output_layouts=Replicate()),
         "norm": SequenceParallel(),
         "layers.0": PrepareModuleInput(
@@ -119,6 +128,8 @@ model = parallelize_module(
         ),
     },
 )
+
+
 
 for layer_id, transformer_block in enumerate(model.layers):
     layer_tp_plan = {
@@ -152,30 +163,48 @@ for layer_id, transformer_block in enumerate(model.layers):
     )
 
 # Init FSDP using the dp device mesh
-sharded_model = FSDP(model, device_mesh=dp_mesh, use_orig_params=True)
+sharded_model = FSDP(model, device_mesh=dp_mesh, use_orig_params=False)
 
-rank_log(_rank, logger, f"Model after parallelization {sharded_model=}\n")
+# rank_log(_rank, logger, f"Model after parallelization {sharded_model=}\n")
+
+
+
+print(sharded_model)
+
 
 # Create an optimizer for the parallelized and sharded model.
 lr = 3e-3
-rank_log(_rank, logger, f"Creating AdamW optimizer with learning rate {lr}")
+# rank_log(_rank, logger, f"Creating AdamW optimizer with learning rate {lr}")
 optimizer = torch.optim.AdamW(sharded_model.parameters(), lr=lr, foreach=True)
 
 # Training loop:
 # Perform a num of iterations of forward/backward
 # and optimizations for the sharded module.
-rank_log(_rank, logger, "\nStarting 2D training...")
-num_iterations = 10
+# rank_log(_rank, logger, "\nStarting 2D training...")
+num_iterations = 100
 batch_size = 2
 
 for i in range(num_iterations):
     # seeding with dp_rank to ensure identical inputs for TP groups
+    print('-'*50)
+    print('epochs ', i)
+
     torch.manual_seed(i + dp_rank)
-    inp = torch.randint(32000, (8, 256), device="cuda")
+    # inp = torch.randint(32000, (8, 256), device="cuda")
+    inp = torch.randint(32000, (8, 128), device="cuda")
+
+
+    # inp = DTensor(local_tensor=inp,
+    #                 device_mesh=device_mesh)
+
 
     output = sharded_model(inp)
+    print(output)
     output.sum().backward()
     optimizer.step()
-    rank_log(_rank, logger, f"2D iter {i} complete")
+    # rank_log(_rank, logger, f"2D iter {i} complete")
+    print('end step')
 
-rank_log(_rank, logger, "2D training successfully completed!")
+print('run finish')
+
+# rank_log(_rank, logger, "2D training successfully completed!")
