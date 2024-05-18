@@ -49,7 +49,7 @@ model = AutoModelForCausalLM.from_pretrained(
 training_args = TrainingArguments(
     output_dir='./output/test_QLoRA',
     gradient_checkpointing=False,
-    bf16=False
+    bf16=True,
     per_device_train_batch_size=4,
     deepspeed='./config/ds.json',
 )
