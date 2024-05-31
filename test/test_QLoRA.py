@@ -23,6 +23,13 @@ peft_config = LoraConfig(
 # get dataset
 dataset = load_dataset("imdb", split="train")
 
+def process(examples):
+    examples['unsupervised'] = examples['text']
+    return examples
+
+
+dataset = dataset.map(process)
+
 from transformers import BitsAndBytesConfig
 
 bnb_config = BitsAndBytesConfig(
@@ -33,7 +40,7 @@ device_map = {"": Accelerator().local_process_index}
 print('device map: ', device_map)
 
 model = AutoModelForCausalLM.from_pretrained(
-    'meta-llama/Llama-2-7b-hf',
+    'xiaodongguaAIGC/llama-3-debug',  # 'meta-llama/Llama-2-7b-hf',
     quantization_config=bnb_config,
     device_map=device_map,
     torch_dtype=torch.bfloat16,

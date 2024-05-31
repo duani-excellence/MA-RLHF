@@ -6,6 +6,12 @@ from transformers import TrainingArguments
 dataset = load_dataset("imdb", split="train")
 
 
+def process(examples):
+    examples['unsupervised'] = examples['text']
+    return examples
+
+dataset = dataset.map(process)
+
 training_args = TrainingArguments(
     output_dir='./output/output_test_deepspeed',
     deepspeed='./config/ds.json',
