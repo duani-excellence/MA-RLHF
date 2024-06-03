@@ -3,7 +3,7 @@ from trl import SFTTrainer
 from transformers import TrainingArguments
 
 # get dataset
-dataset = load_dataset("imdb", split="train")
+dataset = load_dataset("stanfordnlp/imdb", split="train")
 
 
 def process(examples):

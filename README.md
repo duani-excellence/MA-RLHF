@@ -73,7 +73,7 @@ deepspeed ./test/test_QLoRA.py
 ```diff
 - ./scripts/run_all_7b_dpo.sh
 - ./scripts/run_all_7b_ppo_prior.sh
-+ ./scripts/run_7B_sft_full.sh
++ ./scripts/run_7B_sft_full.sh # or use ./scripts/run_7b_sft_qlora.sh
 + ./scripts/run_7B_dpo.sh
 + ./scripts/run_7B_ppo.sh
 ```
@@ -82,7 +82,7 @@ deepspeed ./test/test_QLoRA.py
 >
 > sft full-parameters need more gpu memory， required > 8x3090， should use `config/ds_full.json` use stage3
 >
-> if you want use lora, you set `use_QLora=True`, and set `config/ds.json`
+> if you want use Qlora, SFT training Use `./scripts/run_7b_sft_qlora.sh`
 >
 > We not use `Packed` tricks until trl mask bug fix
 

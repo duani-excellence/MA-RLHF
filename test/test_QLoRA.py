@@ -21,7 +21,7 @@ peft_config = LoraConfig(
 )
 
 # get dataset
-dataset = load_dataset("imdb", split="train")
+dataset = load_dataset("stanfordnlp/imdb", split="train")
 
 def process(examples):
     examples['unsupervised'] = examples['text']
