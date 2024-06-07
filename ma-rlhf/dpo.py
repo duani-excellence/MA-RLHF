@@ -67,7 +67,9 @@ def create_model_tokenizer(name):
     print('device map: ', device_map)
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, quantization_config=bnb_config, device_map=device_map,
+        model_name,
+        quantization_config=bnb_config, 
+        device_map=device_map,
         trust_remote_code=True,
     )
 
@@ -196,7 +198,7 @@ def train():
     training_args = TrainingArguments(
         output_dir=output_name,
         # push_to_hub=False,
-        # save_strategy='epoch',
+        save_strategy='epoch',
         logging_steps=1,
         num_train_epochs=num_train_epochs,
         gradient_checkpointing=True,
