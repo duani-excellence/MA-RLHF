@@ -68,7 +68,7 @@ def create_model_tokenizer(name):
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config, 
+        quantization_config=bnb_config,
         device_map=device_map,
         trust_remote_code=True,
     )
@@ -211,7 +211,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        # max_steps=100,
+        # max_steps=5,
     )
 
     trainer = DPOTrainer(

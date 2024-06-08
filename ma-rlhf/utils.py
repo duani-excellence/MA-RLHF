@@ -21,7 +21,7 @@ from transformers import (
 DEFINE_BOS_TOKEN = '''<|begin_of_text|>'''
 DEFINE_EOS_TOKEN = '''<|end_of_text|>'''
 DEFINE_PAD_TOKEN = '''<|reserved_special_token_0|>'''
-SYSTEM_PROMPT = '''Your are MA-RLHF Chatbot, you should friendly answer the question'''
+SYSTEM_PROMPT = '''You are MA-RLHF Chatbot, you should friendly answer the question'''
 
 
 
