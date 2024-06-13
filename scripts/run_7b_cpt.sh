@@ -1,4 +1,4 @@
-base_model_path='meta-llama/Llama-2-7b-hf'
+base_model_path='meta-llama/Meta-Llama-3-8B'
 deepspeed_config_name=./config/ds.json
 output_path='./output'
 
@@ -16,7 +16,7 @@ date
 echo '-------------------------------------------------------'
 
 # # stage: second pretrained
-pt_dataset_name='imdb'
+pt_dataset_name='stanfordnlp/imdb'
 deepspeed ./ma-rlhf/pretrained.py \
 	--dataset_name=${pt_dataset_name} \
 	--model_name=${base_model_path} \

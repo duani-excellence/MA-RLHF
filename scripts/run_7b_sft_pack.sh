@@ -9,12 +9,6 @@ model_pretrained_lora_path=${output_path}'/pretrained_lora'
 model_pretrained_full_path=${output_path}'/pretrained_full'
 model_sft_lora_path=${output_path}'/sft_lora'
 model_sft_full_path=${output_path}'/sft_full'
-# model_reward_model_lora_path=${output_path}'/reward_model_lora'
-# model_ppo_lora_path=${output_path}'/ppo_lora'
-# model_ppo_full_path=${output_path}'/ppo_full'
-# model_dpo_lora_path=${output_path}'/dpo_lora'
-# model_dpo_full_path=${output_path}'/dpo_full'
-
 
 echo '-------------------------------------------------------'
 date
@@ -24,7 +18,6 @@ echo '-------------------------------------------------------'
 # sft_dataset_name='yahma/alpaca-cleaned'
 # sft_dataset_name='vicgalle/alpaca-gpt4'
 sft_dataset_name='xiaodongguaAIGC/alpaca_en_zh_ruozhiba'
-# sft_dataset_name='xiaodongguaAIGC/alpaca_gpt4_data_zh'
 model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft_pack.py \
 	--dataset_name=${sft_dataset_name} \
@@ -45,12 +38,4 @@ python ./ma-rlhf/merge_adapter.py \
 	--model_name=${model_sft_lora_path} \
 	--merged_model_name=${model_sft_full_path}
 
-
 bash ./scripts/run_generation_examples.sh ${model_sft_full_path} 512
-
-#  # generate result
-#  echo "------------------print sft result------------------"
-#  python ./ma-rlhf/generate.py \
-#  	--model_name=${model_sft_full_path} \
-#  	--prompt='give me a C++ code about quick sort.' \
-#  	--max_new_tokens=512

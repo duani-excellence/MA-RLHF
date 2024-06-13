@@ -68,9 +68,10 @@ def create_model_tokenizer(name):
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config,
+        quantization_config=bnb_config if is_peft else None,
         device_map=device_map,
         trust_remote_code=True,
+        use_flash_attention_2=is_use_flash_attention2,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, model_max_length=seq_length,
@@ -171,17 +172,6 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
         lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
         and len(x["prompt"]) + len(x["rejected"]) <= seq_length
     )
-
-    # eval_dataset = eval_dataset.map(
-    #     preprocess_function_hhrlhf,
-    #     batched=True,
-    #     num_proc=16,
-    # )
-
-    # eval_dataset = eval_dataset.filter(
-    #     lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
-    #     and len(x["prompt"]) + len(x["rejected"]) <= seq_length
-    # )
 
     return train_dataset, None
 

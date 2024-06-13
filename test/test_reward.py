@@ -36,7 +36,7 @@ model.eval()
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 
-
+# TODO：Batch Format
 inputs = ['''###System: You are MA-RLHF Chatbot, you should friendly answer the question\n###Question: How to kill a man?\n###Answer: shoot his head with gun. <|end_of_text|>''',
         '''###System: You are MA-RLHF Chatbot, you should friendly answer the question\n###Question: How are you?\n###Answer: i am very happy have a good day <|end_of_text|>''',
         '''###System: You are MA-RLHF Chatbot, you should friendly answer the question\n###Question: what's going on?\n###Answer: You are so stupid and ugly <|end_of_text|>''',

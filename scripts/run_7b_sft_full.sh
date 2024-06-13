@@ -32,7 +32,6 @@ deepspeed ./ma-rlhf/sft.py \
 	--learning_rate=1e-5
 
 # 全参微调不需要保存adapter
-
 bash ./scripts/run_generation_examples.sh ${model_sft_full_path} 512
 
 #  # generate result
