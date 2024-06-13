@@ -1,35 +1,25 @@
-# MA-RLHF
+# 🐙  MA-RLHF
+
+## Introduction
 
 > [!IMPORTANT]
 >
-> 🐙 MA-RLHF(Multiple Adapter-RLHF)  is a low-cost and efficient large language model training system
+> MA-RLHF(Multiple Adapter-RLHF)  is a low-cost and efficient large language model training system
 
 Feature：
 
 - System : Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
-- DPO : LLaMA2 / Mistral7B + DPO 1h+ in 3090x4
-- **PPO : 3090x8(VRAM 50%) Train 7B Model SFT + Reward Model + PPO training < 1days**
-- Model ：`LLaMA2`, Mistral 7B, Baichuan2-7B
-- Fintune : custom dataset in Continue Pretrained + SFT
-- 🔥 RLHF-PPO : `Notebook` with Pytorch Implementation, NOT other RL-LIB,
-- 💻 70B RLHF： complete SFT/DPO, reward PPO comming soon
-- 🦙 **[Llama-3-8B](https://huggingface.co/xiaodongguaAIGC/xdg-llama-3-8B) : Full-parameter SFT, DPO, reward model, PPO**
+- 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB 
+- 🔥 RLHF-PPO: `Notebook` with Pytorch Implementation, NOT other RL-LIB,
+- 💻 70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **1-weeks**
+- 💻   8B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA3090(24G) in **1-days**
+- 🦙 **[Llama-3-8B](https://huggingface.co/xiaodongguaAIGC/xdg-llama-3-8B) : This project release finally aligned model result**
 
-## MA-RLHF Pipeline & Dataset
-
-- `Pretrained`: imdb, 20k
-- `SFT`: [xiaodongguaAIGC/alpaca_en_zh_ruozhiba](https://huggingface.co/datasets/xiaodongguaAIGC/alpaca_en_zh_ruozhiba), 100K， produced by MA-RLHF with merge alpaca, alpaca-zh and ruozhiba.
-- `DPO` : Anthropic/hh-rlhf, 160k
-- `Reward Model`: SAFE-RLHF, 10k
-- `PPO`: SAFE-RLHF 10k
-
-If you want to custom your dataset, read
-
-- `./data`
-- `./ma-rlhf/util.py`  custom your special prompt template
+## Config
 
 
-## Installation
+
+## Installation & Quick Start
 
 Git Clone MA-RLHF
 
@@ -44,7 +34,7 @@ Create Dev Environment
 conda create -n llm python=3.11
 conda activate llm
 pip install -r requirements.txt
-pip install flash-attn #
+pip install flash-attn # option
 ```
 
 Setting Environment
@@ -64,27 +54,39 @@ deepspeed ./test/test_QLoRA.py
 
 - Deepspeed config json is `./config/ds.json`
 
-## Quick Start
+## Training
+
+- ⚠️ Before you start training, you must run `notebook/LLM_Pipeline_Fintune_LLaMA2_QLoRA_RLHF_20240318.ipynb`
+- If you want to do continual pretraining, you cloud run `run_7b_cpt.sh` before custom your own dataset: `scripts/prepare_dataset.sh`, we make a easy examples `med_qa_textbook` dataset 
+- We ONLY provide standard `Llama-3` training pipeline
 
 ### Required
 
-🚀  Start  LLaMA-3-8B Train RLHF full-pipeline
+🚀  Start  LLaMA-3-8B Train RLHF full-pipeline, also you cloud run with `scripts/run_7b_pipeline.sh`
 
-```diff
-- ./scripts/run_all_7b_dpo.sh
-- ./scripts/run_all_7b_ppo_prior.sh
-+ ./scripts/run_7B_sft_full.sh # or use ./scripts/run_7b_sft_qlora.sh
-+ ./scripts/run_7B_dpo.sh
-+ ./scripts/run_7B_ppo.sh
+```bash
+bash ./scripts/run_7B_sft_full.sh # or use ./scripts/run_7b_sft_qlora.sh
+bash ./scripts/run_7B_dpo.sh
+bash ./scripts/run_7B_ppo.sh
 ```
 
 > [!NOTE]
 >
-> sft full-parameters need more gpu memory， required > 8x3090， should use `config/ds_full.json` use stage3
+> sft full-parameters need more gpu memory， required >= 8xA100(40G)， should use `config/ds_full.json` use stage3
 >
 > if you want use Qlora, SFT training Use `./scripts/run_7b_sft_qlora.sh`
 >
-> We not use `Packed` tricks until trl mask bug fix
+> We not use `Packing` tricks until trl mask bug fix
+
+🚀  Start  LLaMA-3-70B Train RLHF full-pipeline
+
+- you cloud replace base model by
+
+```diff
+# scripts/run_7b_sft_qlora.sh
+- base_model_path='meta-llama/Meta-Llama-3-8B'
++ base_model_path='meta-llama/Meta-Llama-3-70B'
+```
 
 ### Optional
 
@@ -108,26 +110,62 @@ Baichuan2-SFT
 
 Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora or full parameters` ) to Huggingface like [xiaodongguaAIGC](https://huggingface.co/xiaodongguaAIGC)
 
-📄 Script description
+### Evaluation
+
+#### safety/toxity reward evaluation
+
+Firstly, you should run `ma-rlhf/inference_vllm.py` , test your environment, and then run as follow
+
+```bash
+python ma-rlhf/toxicity_evaluation.py
+python ma-rlhf/reward_evaluation.py
+```
+
+#### Benchmarks
+
+- [ ] evaluation with opencompass
+- [ ] evaluation with Llama-factory, only test `cevals` , `MMLU`, `CMMLU`
+
+### Scripts explanation
 
 ```bash
 ./scripts
 ├── prepare_dataset.sh # 处理原始文本数据集->huggingface 格式数据集，用来做二次预训练
-├── run_7b_sft_full.sh #[必跑] 可以全参也可以Qlora
+├── run_7b_sft_full.sh #[必跑]
+├── run_7b_sft_qlora.sh #[必跑] 
 ├── run_7b_dpo.sh #[必跑]
 ├── run_7b_ppo.sh #[必跑] 包含reward和ppo训练
 ├── run_generation_examples.sh # 生成测试脚本
-├── run_70b_dpo.sh # 70B SFT+DPO
-├── run_70b_ppo_prior.sh # (A100 40G 未调通) 70B Reward Model + PPO
 ├── run_7b_cpt.sh # 二次预训练
 ├── run_7b_sft_unsloth.sh # SFT unsloth 手写 backend gradient，加速训练
-├── run_all.sh # 已废弃
-├── run_all_7b_dpo.sh # [不建议] 7B SFT DPO
-├── run_all_7b_ppo.sh # [不建议] 7B SFT RM PPO
-├── run_all_7b_ppo_prior.sh # [不建议] standard 7B SFT DPO RM PPO
 ├── run_all_7b_sft_baichuan2.sh # 中文模型二次预训练+PPO
 └── run_merge_adapter.sh # 合并lora+主干模型
 ```
+
+## Custome Dataset
+
+如何制作数据是LLM关键一环，本部分重点从数据混合角度，来学习基于`datasets` 库的使用，并且可以上传至`hf` 
+
+- `Pretrained`: imdb, 20k
+- `SFT`: [xiaodongguaAIGC/alpaca_en_zh_ruozhiba](https://huggingface.co/datasets/xiaodongguaAIGC/alpaca_en_zh_ruozhiba), 110k, 
+  - produced  from `data/merge_dataset.ipynb`
+  - add some choice question sft data 
+
+- `DPO` : Anthropic/hh-rlhf, 160k
+  - you cloud custom your data by `/data/merge_dataset_preference.ipynb` 300k dataset
+  - we upload [awesome-dpo](https://huggingface.co/datasets/xiaodongguaAIGC/awesome-dpo) in hf
+
+- `Reward Model`: SAFE-RLHF, 10K/30K
+- `PPO`: SAFE-RLHF 10K/30K
+
+If you want to custom your dataset, read
+
+- `./data` 
+- `./ma-rlhf/util.py`  custom your special prompt template
+
+> [!TIP]
+>
+> 不建议SFT模型使用`hh-rlhf`数据集做PPO训练
 
 ## Examples
 
@@ -332,13 +370,14 @@ I cannot assist or advise anyone who is considering cheating on their partner or
 - [x] evaluation module
 - [x] DPO
 - [x] ~~Rejection sampling~~
-- [ ] Custom Data Tutorial
+- [x] Custom Data Tutorial
 - [ ] Video tutorial For MA-RLHF
 - [x] support chinese llm (baichuan2)
 - [x] Add RLHF_PPO Notebook
 - [ ] 70B PPO (Llama-2 SFT/DPO Done)
 - [x] Full parameter Training (SFT)
 - [ ] easy DeepSpeed learning code (on-time)
+- [ ] add benchmark evaluation scripts
 
 ## Other
 
@@ -363,7 +402,7 @@ wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.1.post1
  pip install flash_attn-2.5.1.post1+cu118torch2.1cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
 ```
 
-
+Thanks Michale build unsloth &  evaluation code
 
 ## About Me
 
