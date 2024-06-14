@@ -11,13 +11,26 @@ Feature：
 - System : Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB 
 - 🔥 RLHF-PPO: `Notebook` with Pytorch Implementation, NOT other RL-LIB,
-- 💻 70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **1-weeks**
-- 💻   8B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA3090(24G) in **1-days**
+- 💻 70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **<2-days**
+- 💻   8B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA3090(24G) in **<1-days**
 - 🦙 **[Llama-3-8B](https://huggingface.co/xiaodongguaAIGC/xdg-llama-3-8B) : This project release finally aligned model result**
 
 ## Config
 
 
+
+| Llama-3-70B | SFT                                                          | DPO                                                          | Reward                                                       | PPO                                                          |
+| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Data        | [yahma/alpaca-cleaned](https://huggingface.co/datasets/yahma/alpaca-cleaned) | [Anthropic/hh-rlhf](https://huggingface.co/datasets/Anthropic/hh-rlhf) | [PKU-SafeRLHF-30K](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-30K) | [PKU-SafeRLHF-30K](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-30K) |
+| Epoch       | 1                                                            | 2                                                            | 3                                                            | 1                                                            |
+| Batch size  | 4                                                            | 8                                                            | 16                                                           | 8                                                            |
+| Length      | 512                                                          | 512                                                          | 512                                                          | 512                                                          |
+| QLoRA       | ✅                                                            | ✅                                                            | ✅                                                            | ✅                                                            |
+| Deep Speed  | ZeRO 1                                                       | ZeRO 1                                                       | ZeRO 1                                                       | ZeRO 1                                                       |
+| LR          | 1e-4                                                         | 1e-4                                                         | 2e-5                                                         | 1e-5                                                         |
+| Time        | 2h 7min                                                      | 2h 56min                                                     | 3h 52min                                                     | 31h 29min                                                    |
+
+Thanks [@Leosword](https://jqmraiicku6.feishu.cn/wiki/AVilwV6hoiHLRMkLL01ckE9gnzh) 
 
 ## Installation & Quick Start
 
