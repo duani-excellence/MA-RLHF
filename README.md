@@ -8,7 +8,7 @@
 
 Feature：
 
-- System : Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
+- System : HuggingFace* +Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB 
 - 🔥 RLHF-PPO: `Notebook` with Pytorch Implementation, NOT other RL-LIB,
 - 💻 70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **<2-days**
@@ -193,6 +193,14 @@ CUDA_VISIBLE_DEVICES=0 python run.py --models hf_xdg-llama-3-8b --datasets ceval
 CUDA_VISIBLE_DEVICES=1 python run.py --models hf_xdg-llama-3-8b --datasets mmlu_gen  --num-gpus 1 &
 CUDA_VISIBLE_DEVICES=2 python run.py --models hf_xdg-llama-3-8b --datasets cmmlu_gen  --num-gpus 1 &
 ```
+Result:
+|                     | MMLU  | C-EVAL | C-MMLU |
+| ------------------- | ----- | ------ | ------ |
+| Llama-3-8B          | 66.6  | 49.5   | 50.8   |
+| Llama-3-8B-Instruct | 68.4  | 45.9   |        |
+| Llama-3-8B-xdg      | 56.71 | 42.83  | 45.04  |
+
+- Llama-3-8B evaluation result from [Qwen2](https://huggingface.co/Qwen/Qwen2-7B-Instruct)
 
 ## Custome Dataset
 
