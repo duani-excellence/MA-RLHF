@@ -154,7 +154,22 @@ python ma-rlhf/reward_evaluation.py
 
 1. evaluation with [opencompass](https://github.com/open-compass/opencompass)
 
-copy file from `./evaluation/hf_xdg-llama-3-8b.py`  to `opencompass` project `opencompass/configs/models/others/hf_xdg-llama-3-8b.py`, and then run as follow:
+copy file from `./evaluation/hf_xdg-llama-3-8b.py`  to `opencompass` project `opencompass/configs/models/others/hf_xdg-llama-3-8b.py`
+
+use your model path, example model  [xdg-llama-3-8B](https://huggingface.co/xiaodongguaAIGC) (be RLHF Aligned)
+
+```python
+# ./evaluation/hf_xdg-llama-3-8b.py
+models = [
+    dict(
+        abbr='xdg-llama-3-8b',
+        type=HuggingFaceCausalLM,
+        path='/mnt/output/llama3-xdg', # you model path
+        tokenizer_path='/mnt/output/llama3-xdg', # you model path
+      ....
+```
+
+ and then run as follow:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python run.py --models hf_xdg-llama-3-8b --datasets ceval_gen  --num-gpus 1 &
@@ -162,22 +177,20 @@ CUDA_VISIBLE_DEVICES=0 python run.py --models hf_xdg-llama-3-8b --datasets ceval
 
 you cloud easily use other benchmark like `--datasets ceval_gen, mmlu_gen, cmmlu_gen`,  If you only evaluate pretrained model, and use `cevel_gen->ceval_ppl`
 
-about ~10 min in `V100x1` , we get ceval result in `./Projects/opencompass/outputs/default/2024xxxx_xxxx`
+about ~10 min in `V100x1` , we get  ceval result in `./Projects/opencompass/outputs/default/2024xxxx_xxxx`
 
 ```text
 ......
-ceval-other                    -          naive_average  gen                43.89
-ceval-hard                     -          naive_average  gen                33.22
-ceval                          -          naive_average  gen                42.83
+ceval-other  -          naive_average  gen                43.89
+ceval-hard   -          naive_average  gen                33.22
+ceval        -          naive_average  gen                42.83
 ```
 
 for pararrel evaluate, run as follow
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python run.py --models hf_xdg-llama-3-8b --datasets ceval_gen  --num-gpus 1 &
-
 CUDA_VISIBLE_DEVICES=1 python run.py --models hf_xdg-llama-3-8b --datasets mmlu_gen  --num-gpus 1 &
-
 CUDA_VISIBLE_DEVICES=2 python run.py --models hf_xdg-llama-3-8b --datasets cmmlu_gen  --num-gpus 1 &
 ```
 

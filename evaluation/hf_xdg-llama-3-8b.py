@@ -24,8 +24,8 @@ models = [
     dict(
         abbr='xdg-llama-3-8b',
         type=HuggingFaceCausalLM,
-        path='/mnt/output/llama3-xdg',
-        tokenizer_path='/mnt/output/llama3-xdg',
+        path='/mnt/output/llama3-xdg', # you model
+        tokenizer_path='/mnt/output/llama3-xdg', # you model
         model_kwargs=dict(
             device_map='auto',
             trust_remote_code=True,
