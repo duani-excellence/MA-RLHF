@@ -426,7 +426,7 @@ I cannot assist or advise anyone who is considering cheating on their partner or
 
 ## TODO
 
-- [ ] Add LLM Performance + scaling
+- [x] Add LLM Performance + scaling
 - [x] evaluation module
 - [x] DPO
 - [x] ~~Rejection sampling~~
@@ -434,7 +434,7 @@ I cannot assist or advise anyone who is considering cheating on their partner or
 - [ ] Video tutorial For MA-RLHF
 - [x] support chinese llm (baichuan2)
 - [x] Add RLHF_PPO Notebook
-- [ ] 70B PPO (Llama-2 SFT/DPO Done)
+- [x] 70B PPO (Llama-3 SFT/DPO Done)
 - [x] Full parameter Training (SFT)
 - [ ] easy DeepSpeed learning code (on-time)
 - [x] add benchmark evaluation scripts
