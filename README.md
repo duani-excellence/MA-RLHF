@@ -9,7 +9,7 @@
 Feature：
 
 - System : HuggingFace* +Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
-- 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB 
+- 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB
 - 🔥 RLHF-PPO: `Notebook` with Pytorch Implementation, NOT other RL-LIB,
 - 💻 70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **<2-days**
 - 💻   8B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA3090(24G) in **<1-days**
@@ -17,7 +17,7 @@ Feature：
 
 ## Config
 
-
+·
 
 | Llama-3-70B | SFT                                                          | DPO                                                          | Reward                                                       | PPO                                                          |
 | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -30,7 +30,7 @@ Feature：
 | LR          | 1e-4                                                         | 1e-4                                                         | 2e-5                                                         | 1e-5                                                         |
 | Time        | 2h 7min                                                      | 2h 56min                                                     | 3h 52min                                                     | 31h 29min                                                    |
 
-Thanks [@Leosword](https://jqmraiicku6.feishu.cn/wiki/AVilwV6hoiHLRMkLL01ckE9gnzh) 
+Thanks [@Leosword](https://jqmraiicku6.feishu.cn/wiki/AVilwV6hoiHLRMkLL01ckE9gnzh)
 
 ## Installation & Quick Start
 
@@ -70,7 +70,7 @@ deepspeed ./test/test_QLoRA.py
 ## Training
 
 - ⚠️ Before you start training, you must run `notebook/LLM_Pipeline_Fintune_LLaMA2_QLoRA_RLHF_20240318.ipynb`
-- If you want to do continual pretraining, you cloud run `run_7b_cpt.sh` before custom your own dataset: `scripts/prepare_dataset.sh`, we make a easy examples `med_qa_textbook` dataset 
+- If you want to do continual pretraining, you cloud run `run_7b_cpt.sh` before custom your own dataset: `scripts/prepare_dataset.sh`, we make a easy examples `med_qa_textbook` dataset
 - We ONLY provide standard `Llama-3` training pipeline
 
 ### Required
@@ -129,7 +129,7 @@ Finally you can use `./notebook/upload_model.ipynb` to upload you result(`lora o
 ./scripts
 ├── prepare_dataset.sh # 处理原始文本数据集->huggingface 格式数据集，用来做二次预训练
 ├── run_7b_sft_full.sh #[必跑]
-├── run_7b_sft_qlora.sh #[必跑] 
+├── run_7b_sft_qlora.sh #[必跑]
 ├── run_7b_dpo.sh #[必跑]
 ├── run_7b_ppo.sh #[必跑] 包含reward和ppo训练
 ├── run_generation_examples.sh # 生成测试脚本
@@ -197,19 +197,19 @@ Result:
 |                     | MMLU  | C-EVAL | C-MMLU |
 | ------------------- | ----- | ------ | ------ |
 | Llama-3-8B          | 66.6  | 49.5   | 50.8   |
-| Llama-3-8B-Instruct | 68.4  | 45.9   |        |
+| Llama-3-8B-Instruct | 68.4  | 45.9   | /      |
 | Llama-3-8B-xdg      | 56.71 | 42.83  | 45.04  |
 
 - Llama-3-8B evaluation result from [Qwen2](https://huggingface.co/Qwen/Qwen2-7B-Instruct)
 
 ## Custome Dataset
 
-如何制作数据是LLM关键一环，本部分重点从数据混合角度，来学习基于`datasets` 库的使用，并且可以上传至`hf` 
+如何制作数据是LLM关键一环，本部分重点从数据混合角度，来学习基于`datasets` 库的使用，并且可以上传至`hf`
 
 - `Pretrained`: imdb, 20k
-- `SFT`: [xiaodongguaAIGC/alpaca_en_zh_ruozhiba](https://huggingface.co/datasets/xiaodongguaAIGC/alpaca_en_zh_ruozhiba), 110k, 
+- `SFT`: [xiaodongguaAIGC/alpaca_en_zh_ruozhiba](https://huggingface.co/datasets/xiaodongguaAIGC/alpaca_en_zh_ruozhiba), 110k,
   - produced  from `data/merge_dataset.ipynb`
-  - add some choice question sft data 
+  - add some choice question sft data
 
 - `DPO` : Anthropic/hh-rlhf, 160k
   - you cloud custom your data by `/data/merge_dataset_preference.ipynb` 300k dataset
@@ -220,7 +220,7 @@ Result:
 
 If you want to custom your dataset, read
 
-- `./data` 
+- `./data`
 - `./ma-rlhf/util.py`  custom your special prompt template
 
 > [!TIP]
