@@ -32,6 +32,8 @@ Feature：
 
 Thanks [@Leosword](https://jqmraiicku6.feishu.cn/wiki/AVilwV6hoiHLRMkLL01ckE9gnzh)
 
+✅ run 30model in 8xA100 80G, cpu-offload, each gpu memory is 20G+/80G
+
 ## Installation & Quick Start
 
 Git Clone MA-RLHF
@@ -63,6 +65,16 @@ DeepSpeed Test
 
 ```bash
 deepspeed ./test/test_QLoRA.py
+```
+
+DeepSpeed Test ZERO3
+
+`https://www.deepspeed.ai/tutorials/advanced-install/`
+
+when you use cpu-offload, set `DS_SKIP_CUDA_CHECK=1`
+
+```bash
+# TODO
 ```
 
 - Deepspeed config json is `./config/ds.json`
