@@ -1,5 +1,5 @@
 # 完整运行
-
+DS_SKIP_CUDA_CHECK=1
 base_model_path='meta-llama/Meta-Llama-3-8B'
 deepspeed_config_name=./config/ds_full.json
 output_path='./output'

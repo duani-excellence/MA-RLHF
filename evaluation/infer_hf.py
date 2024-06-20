@@ -48,7 +48,6 @@ def load_model(model_path, rank):
         # torch_dtype=torch.float16,
         use_flash_attention_2=False,
         trust_remote_code=True,
-
         quantization_config=bnb_config,
         # load_in_4bit=True,
         device_map=f'cuda:{rank}',
