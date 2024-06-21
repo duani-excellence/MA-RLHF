@@ -39,7 +39,7 @@ seq_length = train_args.seq_length
 output_name = train_args.output_name
 is_peft = train_args.use_QLora
 is_use_flash_attention2 = train_args.use_flash_attention_2
-# num_train_epochs = train_args.num_train_epochs
+
 gradient_accumulation_steps = train_args.gradient_accumulation_steps
 
 def create_model_tokenizer(name, rm_model_name, peft_config):
@@ -72,7 +72,7 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
     model.pad_token_id = tokenizer.pad_token_id
     model.pad_token = tokenizer.pad_token
     model.pad_token_id = tokenizer.pad_token_id
-    model.config.pad_token_id = model.config.eos_token_id
+    # model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 

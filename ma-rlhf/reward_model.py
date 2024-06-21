@@ -68,17 +68,15 @@ def create_model_tokenizer(name):
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
 
-    # tokenizer.pad_token = tokenizer.eos_token
-    # tokenizer.eos_token = DEFINE_EOS_TOKEN
-    # https://stackoverflow.com/questions/68084302/assertionerror-cannot-handle-batch-sizes-1-if-no-padding-token-is-defined
-    # model.config.pad_token_id = model.config.eos_token_id
+    tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
+    model.pad_token_id = tokenizer.pad_token_id
+    model.pad_token = tokenizer.pad_token
 
     return model, tokenizer
 
 
-tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-# tokenizer.pad_token = tokenizer.eos_token
-# tokenizer.eos_token = DEFINE_EOS_TOKEN
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, max_length=512)
+tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
 
 # for prompt, chosen, rejected
 def preprocess_function(examples):
@@ -98,10 +96,12 @@ def preprocess_function(examples):
         tokenized_j = tokenizer(
             str_chosen,
             truncation=True,
+            padding='longest'
         )
         tokenized_k = tokenizer(
             str_rejected,
             truncation=True,
+            padding='longest'
         )
 
         new_examples["input_ids_chosen"].append(tokenized_j["input_ids"])

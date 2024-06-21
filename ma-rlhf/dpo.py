@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from datasets import load_dataset, load_from_disk, concatenate_datasets
-from trl import DPOTrainer
+from trl import DPOTrainer, DPOConfig
 import re
 import torch
 import evaluate
@@ -185,7 +185,7 @@ def train():
     # PEFT
     peft_config = create_peft(is_peft)
 
-    training_args = TrainingArguments(
+    training_args = DPOConfig(
         output_dir=output_name,
         # push_to_hub=False,
         save_strategy='epoch',
@@ -202,7 +202,11 @@ def train():
         report_to='wandb',
         lr_scheduler_type='cosine',
         # max_steps=5,
-    )
+        # loss_type: Literal[
+        #     "sigmoid", "hinge", "ipo", "kto_pair", "bco_pair", "sppo_hard", "nca_pair", "robust"
+        # ] = "sigmoid"
+        loss_type='sigmoid',
+        )
 
     trainer = DPOTrainer(
         model,
