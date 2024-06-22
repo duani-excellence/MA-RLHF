@@ -1,13 +1,13 @@
 # CUDA_VISIBLE_DEVICES=0,1,2,3 python ./evaluation/vllm_generation.py \
 # 	--model_name='{YOU MODEL}' \
-# 	--output_name='./output/result_vllm_tmp.json'  \
+# 	--output_name='./output/result_vllm_generation'  \
 # 	--max_output_tokens=512 \
 # 	--num_gpus=4
 
 
 import re
 import numpy as np
-from datasets import load_dataset, load_from_disk
+from datasets import load_dataset, load_from_disk, Dataset, DatasetDict
 from vllm import LLM, SamplingParams
 import argparse
 import json
@@ -17,7 +17,7 @@ import json
 SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
 
 def format_prompt(question):
-    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer: "
+    return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer:"
 
 
 def create_dataset(dataset_name):
@@ -43,19 +43,15 @@ def create_dataset(dataset_name):
             # query = prompt_chosen + '###Answer:'
             prompt_question = prompt_chosen.split('\n###Answer:', 1)[0] + '\n###Answer:'
             new_examples['prompts'].append(prompt_question)
-
         return new_examples
 
-    func = None
-    # if dataset_name == '/root/hh-rlhf':
-    #     func = preprocess_function_hhrlhf
-    # elif dataset_name == '/root/PKU-SafeRLHF-30K':
+    # func = None
     func = preprocess_function
 
     datasets = datasets.map(
         func,
         batched=True,
-        num_proc=8,
+        num_proc=24,
         # remove_columns=datasets.column_names,
     )
 
@@ -91,22 +87,34 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
     outputs = llm.generate(dataset['prompts'],
                            sampling_params,)
 
+    # print(generated_text = output[0].outputs[0].text)
 
     result_all = []
+    column_response=[]
     for output in outputs:
         prompt = output.prompt
         generated_text = output.outputs[0].text
-        # print('-'*50)
-        # print(prompt)
         # print(generated_text)
-        tmp = {'prompt':prompt,
-                'response':generated_text}
+        # print(generated_text.rsplit('###Answer:',1))
+        # if len(generated_text.rsplit('###Answer:',1)) == 2 :
+        #     # print()
+        #     generated_text = generated_text.rsplit('###Answer:',1)[1]
+        # else:
+        #     generated_text = ''
+        tmp = {'prompt':prompt, 'response':generated_text}
         result_all.append(tmp)
+        column_response.append(generated_text)
 
 
-    current_result_file = output_name
-    with open(current_result_file, 'w') as file:
-        json.dump(result_all, file)
+    # save json file
+    current_result_file = output_name + '.json'
+    with open(current_result_file, 'w', encoding='utf-8') as file:
+        json.dump(result_all, file, )
+
+    # save hf dataset
+    dataset = dataset.add_column(name='response', column=column_response)
+    dataset_dict = DatasetDict({'test':dataset})
+    dataset_dict.save_to_disk(output_name)
 
 
 
