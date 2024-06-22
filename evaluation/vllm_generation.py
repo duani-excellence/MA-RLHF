@@ -77,6 +77,7 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
               dtype='bfloat16',
               tensor_parallel_size=num_gpus,  # number of gpu
               gpu_memory_utilization=0.9,  # prevent OOM
+              trust_remote_code=True,
             #   use_cache=False,
               )
 
@@ -109,7 +110,7 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
     # save json file
     current_result_file = output_name + '.json'
     with open(current_result_file, 'w', encoding='utf-8') as file:
-        json.dump(result_all, file, )
+        json.dump(result_all, file, ensure_ascii=False)
 
     # save hf dataset
     dataset = dataset.add_column(name='response', column=column_response)
