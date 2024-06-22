@@ -91,6 +91,18 @@ def vllm_generate(model_name, dataset_name ,output_name, max_output_tokens, batc
     dataset_dict = DatasetDict({'test':dataset})
     dataset_dict.save_to_disk(output_name)
 
+    # test metric
+    # answers
+
+    arr = np.array(answers)
+
+    # 统计大于 0.5 的数据个数
+    pred_count = np.sum(arr > 0.5)
+
+    # 计算大于 0.5 的数据比例
+    pred = pred_count / len(arr)
+    print('safe pred:' , pred)
+
 
 
 if __name__ == "__main__":
