@@ -17,8 +17,6 @@ Feature：
 
 ## Config
 
-·
-
 | Llama-3-70B | SFT                                                          | DPO                                                          | Reward                                                       | PPO                                                          |
 | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Data        | [yahma/alpaca-cleaned](https://huggingface.co/datasets/yahma/alpaca-cleaned) | [Anthropic/hh-rlhf](https://huggingface.co/datasets/Anthropic/hh-rlhf) | [PKU-SafeRLHF-30K](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-30K) | [PKU-SafeRLHF-30K](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF-30K) |
@@ -206,7 +204,7 @@ CUDA_VISIBLE_DEVICES=1 python run.py --models hf_xdg-llama-3-8b --datasets mmlu_
 CUDA_VISIBLE_DEVICES=2 python run.py --models hf_xdg-llama-3-8b --datasets cmmlu_gen  --num-gpus 1 &
 ```
 Result:
-|                     | MMLU  | C-EVAL | C-MMLU |
+| Model               | MMLU  | C-EVAL | C-MMLU |
 | ------------------- | ----- | ------ | ------ |
 | Llama-3-8B          | 66.6  | 49.5   | 50.8   |
 | Llama-3-8B-Instruct | 68.4  | 45.9   | /      |
