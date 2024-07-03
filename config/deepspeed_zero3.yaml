@@ -1,24 +1,17 @@
 compute_environment: LOCAL_MACHINE
 debug: false
 deepspeed_config:
-  # deepspeed_config_file: /home/ubuntu/accelerate/examples/configs/deepspeed_config_templates/zero_stage3_offload_config.json
-  deepspeed_multinode_launcher: standard
+  # deepspeed_config_file: /root/Projects/MA-RLHF/config/ds_full_offload.json
+  # deepspeed_multinode_launcher: standard
   gradient_accumulation_steps: 1
   offload_optimizer_device: cpu
-  # /root/miniconda3/envs/llm/lib/python3.11/site-packages/deepspeed/ops/op_builder/builder.py
-  # def assert_no_cuda_mismatch(name=""):
-  # cuda_major, cuda_minor = installed_cuda_version(name)
-  # sys_cuda_version = f'{cuda_major}.{cuda_minor}'
-  # torch_cuda_version = ".".join(torch.version.cuda.split('.')[:2])
-  # # This is a show-stopping error, should probably not proceed past this
-  # if sys_cuda_version != torch_cuda_version:
-  #     return True
-  offload_param_device: cpu # if cpu
+  bf16:
+    enabled': True,
+  offload_param_device: none # if cpu
   zero3_init_flag: true
   zero3_save_16bit_model: true
   zero_stage: 3
 distributed_type: DEEPSPEED
-downcast_bf16: 'no'
 machine_rank: 0
 main_training_function: main
 mixed_precision: 'bf16'

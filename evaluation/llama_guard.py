@@ -1,4 +1,5 @@
 # no debug
+import os
 import re
 import torch
 from datasets import load_dataset, load_from_disk
@@ -26,9 +27,6 @@ import argparse
 
 torch.manual_seed(42)
 
-
-
-import os
 
 # # 定义文件夹路径
 # folder_path = 'path/to/your/folder'
@@ -63,7 +61,6 @@ SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and 
 #     dist.destroy_process_group()
 
 
-
 def load_model(model_path, rank):
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.float16,
@@ -81,11 +78,11 @@ def load_model(model_path, rank):
         # device_map='auto',
     )
     model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side='left' ,trust_remote_code=True,)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path, padding_side='left', trust_remote_code=True,)
 
     return model, tokenizer
 
-import re
 
 def parse_prompt(text):
     # 正则表达式模式，精确匹配关键字 "system"、"user" 和 "robot"
@@ -98,8 +95,8 @@ def parse_prompt(text):
     result_dict = {key: value for key, value in matches}
 
     message = []
-    message.append({'role':'user', 'content':result_dict['###Question']})
-    message.append({'role':'assistant', 'content':result_dict['###Answer']})
+    message.append({'role': 'user', 'content': result_dict['###Question']})
+    message.append({'role': 'assistant', 'content': result_dict['###Answer']})
 
     return message
 
@@ -110,9 +107,10 @@ def parse_prompt(text):
 # parsed_dict = parse_key_value_pairs(text)
 # print(parsed_dict)
 
+
 def create_dataset(dataset_name, tokenizer):
     data_raw = json.load(dataset_name)
-    data_message = [ {'chat':parse_prompt(s)} for s in data_raw]
+    data_message = [{'chat': parse_prompt(s)} for s in data_raw]
     # load_dataset(dict)
     datasets_hf = datasets.Dataset.from_dict(data_message)
     print(datasets_hf)
@@ -128,6 +126,7 @@ def create_dataset(dataset_name, tokenizer):
     datasets = datasets.filter(lambda x: len(x["input_ids"]) < 2048)
     return datasets
 
+
 def evaluate_reward(model_name, output_name, max_output_tokens, batch_size, dataset_file):
     # evaluation dataset
     # dataset = create_dataset('/root/hh-rlhf') # replace your own dataset
@@ -135,7 +134,6 @@ def evaluate_reward(model_name, output_name, max_output_tokens, batch_size, data
     dist.init_process_group("nccl")
     rank = dist.get_rank()
     torch.cuda.set_device(rank)
-
 
     if rank == 0:
         if not os.path.exists(output_name):
@@ -154,8 +152,10 @@ def evaluate_reward(model_name, output_name, max_output_tokens, batch_size, data
 
     print(dataset)
     sampler = DistributedSampler(dataset)
-    data_collator = DataCollatorWithPadding(tokenizer, max_length=512, padding=True)
-    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, collate_fn=data_collator)
+    data_collator = DataCollatorWithPadding(
+        tokenizer, max_length=512, padding=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size,
+                            sampler=sampler, collate_fn=data_collator)
 
     step = 0
     step_all = len(dataloader)
@@ -179,17 +179,16 @@ def evaluate_reward(model_name, output_name, max_output_tokens, batch_size, data
             print(f'{step}/{step_all}')
             print('-'*50)
         tmp = {'input_ids': torch.tensor(x['input_ids'], dtype=torch.long).to(rank),
-                'attention_mask': torch.tensor(x['attention_mask'],dtype=torch.bool).to(rank)}
+               'attention_mask': torch.tensor(x['attention_mask'], dtype=torch.bool).to(rank)}
         with torch.no_grad():
-            y = model(**tmp)['logits'][:,-1,:]
-
+            y = model(**tmp)['logits'][:, -1, :]
 
         for i in range(len(x['chat'])):
             tmp_result = {}
             tmp_result['prompt'] = x['chat'][i]['user']
             tmp_result['response'] = x['chat'][i]['assistant']
-            tmp_result['safe_prob'] = float(y[i,safe_id])
-            tmp_result['unsafe_prob'] = float(y[i,unsafe_id])
+            tmp_result['safe_prob'] = float(y[i, safe_id])
+            tmp_result['unsafe_prob'] = float(y[i, unsafe_id])
             result_all.append(tmp_result)
 
     current_result_file = output_name + f'/eval_{rank}.json'

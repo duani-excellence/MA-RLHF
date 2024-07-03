@@ -1,8 +1,8 @@
 # copy this file to 'opencompass/configs/models/others/hf_xdg-llama-3-8b.py'
 # run
 # ```
-#CUDA_VISIBLE_DEVICES=0 python run.py --models hf_xdg-llama-3-8b --datasets ceval_gen  --num-gpus 1
-#```
+# CUDA_VISIBLE_DEVICES=0 python run.py --models hf_xdg-llama-3-8b --datasets ceval_gen  --num-gpus 1
+# ```
 # also you cloud run : --datasets ceval_gen, mmlu_gen, cmmlu
 # result : 42.48
 
@@ -24,8 +24,8 @@ models = [
     dict(
         abbr='xdg-llama-3-8b',
         type=HuggingFaceCausalLM,
-        path='/mnt/output/llama3-xdg', # you model
-        tokenizer_path='/mnt/output/llama3-xdg', # you model
+        path='/mnt/output/llama3-xdg',  # you model
+        tokenizer_path='/mnt/output/llama3-xdg',  # you model
         model_kwargs=dict(
             device_map='auto',
             trust_remote_code=True,

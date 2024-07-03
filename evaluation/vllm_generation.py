@@ -16,12 +16,14 @@ import json
 # to do use utils
 SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
 
+
 def format_prompt(question):
     return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer:"
 
 
 def create_dataset(dataset_name):
     datasets = load_dataset(dataset_name, split='test')
+
     def preprocess_function(examples):
         new_examples = {
             "prompts": [],
@@ -37,11 +39,12 @@ def create_dataset(dataset_name):
         }
         for prompt_chosen in examples["chosen"]:
             # format hh-rlhf dataset for PPO
-            prompt_chosen = prompt_chosen.rsplit('Assistant:',1)[0]
+            prompt_chosen = prompt_chosen.rsplit('Assistant:', 1)[0]
             prompt_chosen = re.sub(r'Human:', '###Question:', prompt_chosen)
             prompt_chosen = re.sub(r'Assistant:', '###Answer:', prompt_chosen)
             # query = prompt_chosen + '###Answer:'
-            prompt_question = prompt_chosen.split('\n###Answer:', 1)[0] + '\n###Answer:'
+            prompt_question = prompt_chosen.split('\n###Answer:', 1)[
+                0] + '\n###Answer:'
             new_examples['prompts'].append(prompt_question)
         return new_examples
 
@@ -59,6 +62,7 @@ def create_dataset(dataset_name):
     # datasets.set_format(type="torch")
     return datasets
 
+
 def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gpus):
     # evaluation dataset
     # dataset = create_dataset('/root/hh-rlhf') # replace your own dataset
@@ -69,16 +73,16 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
     sampling_params = SamplingParams(temperature=0.8,
                                      max_tokens=max_output_tokens,
                                      stop="</s>",
-                                    #  use_cache=False,
+                                     #  use_cache=False,
                                      )
     # Create LLM object
     # kwargs
-    llm = LLM(model=model_name, # replace your own model
+    llm = LLM(model=model_name,  # replace your own model
               dtype='bfloat16',
               tensor_parallel_size=num_gpus,  # number of gpu
               gpu_memory_utilization=0.9,  # prevent OOM
               trust_remote_code=True,
-            #   use_cache=False,
+              #   use_cache=False,
               )
 
     # # load toxicity evaluation model
@@ -91,7 +95,7 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
     # print(generated_text = output[0].outputs[0].text)
 
     result_all = []
-    column_response=[]
+    column_response = []
     for output in outputs:
         prompt = output.prompt
         generated_text = output.outputs[0].text
@@ -102,10 +106,9 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
         #     generated_text = generated_text.rsplit('###Answer:',1)[1]
         # else:
         #     generated_text = ''
-        tmp = {'prompt':prompt, 'response':generated_text}
+        tmp = {'prompt': prompt, 'response': generated_text}
         result_all.append(tmp)
         column_response.append(generated_text)
-
 
     # save json file
     current_result_file = output_name + '.json'
@@ -114,10 +117,8 @@ def vllm_generate(model_name, output_name, max_output_tokens, batch_size, num_gp
 
     # save hf dataset
     dataset = dataset.add_column(name='response', column=column_response)
-    dataset_dict = DatasetDict({'test':dataset})
+    dataset_dict = DatasetDict({'test': dataset})
     dataset_dict.save_to_disk(output_name)
-
-
 
 
 if __name__ == "__main__":
@@ -137,8 +138,8 @@ if __name__ == "__main__":
     print(args)
 
     vllm_generate(args.model_name,
-                args.output_name,
-                args.max_output_tokens,
-                args.batch_size,
-                args.num_gpus)
+                  args.output_name,
+                  args.max_output_tokens,
+                  args.batch_size,
+                  args.num_gpus)
     # print(f'toxicity score mean: {mean}, toxicity score std: {std}')

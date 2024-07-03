@@ -29,6 +29,7 @@ DEFINE_EOS_TOKEN = '''</s>'''
 DEFINE_PAD_TOKEN = '''<pad>'''
 SYSTEM_PROMPT = '''You are a robot named "MA-RLHF", you are always friendly and answer questions。'''
 
+
 def format_prompt_answer(question, answer):
     '''for generation'''
     return f"###System: {SYSTEM_PROMPT}\n###Question: {question}\n###Answer: {answer} {DEFINE_EOS_TOKEN}"
@@ -54,9 +55,11 @@ def load_model(model_path, rank):
         # device_map='auto',
     )
     model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side='left' ,trust_remote_code=True,)
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path, padding_side='left', trust_remote_code=True,)
 
     return model, tokenizer
+
 
 def create_dataset(dataset_name, tokenizer):
     datasets = load_dataset(dataset_name, split='test')
@@ -70,23 +73,23 @@ def create_dataset(dataset_name, tokenizer):
         examples['attention_mask'] = inputs['attention_mask'][0]
         return examples
 
-
     datasets = datasets.map(
         process,
         # batched=True,
         num_proc=24,
         remove_columns=['prompt', 'response_0', 'response_1', 'is_response_0_safe', 'is_response_1_safe',
-'better_response_id', 'safer_response_id'],
+                        'better_response_id', 'safer_response_id'],
     )
 
     datasets = datasets.filter(lambda x: len(x["input_ids"]) < 512)
     return datasets
 
+
 def generate_dp(model_name, output_name, max_output_tokens, batch_size):
 
     dist.init_process_group("nccl")
     rank = dist.get_rank()
-    torch.cuda.set_device(rank) # 没有这句话，cuda0将会炸
+    torch.cuda.set_device(rank)  # 没有这句话，cuda0将会炸
 
     if rank == 0:
         if not os.path.exists(output_name):
@@ -105,8 +108,10 @@ def generate_dp(model_name, output_name, max_output_tokens, batch_size):
 
     print(dataset)
     sampler = DistributedSampler(dataset)
-    data_collator = DataCollatorWithPadding(tokenizer, max_length=512, padding=True)
-    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=sampler, collate_fn=data_collator)
+    data_collator = DataCollatorWithPadding(
+        tokenizer, max_length=512, padding=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size,
+                            sampler=sampler, collate_fn=data_collator)
 
     step = 0
     step_all = len(dataloader)
@@ -125,10 +130,13 @@ def generate_dp(model_name, output_name, max_output_tokens, batch_size):
             print('-'*50)
             print(f'{step}/{step_all}')
             print('-'*50)
-        x['input_ids'] = torch.tensor(x['input_ids'], dtype=torch.long).to(rank)
-        x['attention_mask'] = torch.tensor(x['attention_mask'],dtype=torch.bool).to(rank)
+        x['input_ids'] = torch.tensor(
+            x['input_ids'], dtype=torch.long).to(rank)
+        x['attention_mask'] = torch.tensor(
+            x['attention_mask'], dtype=torch.bool).to(rank)
         with torch.no_grad():
-            y = model.generate(**x, max_new_tokens=max_output_tokens, do_sample=False)
+            y = model.generate(
+                **x, max_new_tokens=max_output_tokens, do_sample=False)
         result = tokenizer.batch_decode(y, skip_special_tokens=True)
         result_all.extend(result)
         if rank == 0:
@@ -141,7 +149,6 @@ def generate_dp(model_name, output_name, max_output_tokens, batch_size):
     current_result_file = output_name + f'/result_{rank}.json'
     with open(current_result_file, 'w') as file:
         json.dump(result_all, file)
-
 
     dist.barrier()
 
