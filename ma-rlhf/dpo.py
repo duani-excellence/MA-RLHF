@@ -168,10 +168,11 @@ def create_dpo_datasets(datasets_name, dataset_sub_name, tokenizer):
         num_proc=16,
     )
 
-    train_dataset = train_dataset.filter(
-        lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
-        and len(x["prompt"]) + len(x["rejected"]) <= seq_length
-    )
+    # filter should in token ids, NOT IN STRING
+    # train_dataset = train_dataset.filter(
+    #     lambda x: len(x["prompt"]) + len(x["chosen"]) <= seq_length
+    #     and len(x["prompt"]) + len(x["rejected"]) <= seq_length
+    # )
 
     return train_dataset, None
 
@@ -206,6 +207,7 @@ def train():
         #     "sigmoid", "hinge", "ipo", "kto_pair", "bco_pair", "sppo_hard", "nca_pair", "robust"
         # ] = "sigmoid"
         loss_type='sigmoid',
+        dataset_num_proc=64,
         )
 
     trainer = DPOTrainer(
