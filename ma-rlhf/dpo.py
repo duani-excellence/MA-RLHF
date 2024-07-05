@@ -86,6 +86,7 @@ def create_model_tokenizer(name):
 
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
 # tokenizer.eos_token = DEFINE_EOS_TOKEN
 # tokenizer.pad_token = tokenizer.eos_token
 
