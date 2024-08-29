@@ -1,9 +1,7 @@
 # torchrun  --nnodes=1 --nproc_per_node=2 ./test/deepspeed/torch_tp_colwise.py
-
 import os
 import torch
 import torch.distributed as dist
-
 
 def is_main_device():
     rank = dist.get_rank()
