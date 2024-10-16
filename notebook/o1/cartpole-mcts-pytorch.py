@@ -236,7 +236,7 @@ class Node:
 
 
 # MCTS exploring constant: the higher, the more reliable, but slower in execution time
-MCTS_POLICY_EXPLORE = 200 # 这个是MCTS搜索宽度。
+MCTS_POLICY_EXPLORE = 100 # 这个是MCTS搜索宽度。
 
 
 def Policy_Player_MCTS(mytree):
@@ -261,7 +261,7 @@ def Policy_Player_MCTS(mytree):
     return next_tree, next_action
 
 
-episodes = 200  # 调这个参数长度
+episodes = 100  # 调这个参数长度
 rewards = []
 moving_average = []
 
