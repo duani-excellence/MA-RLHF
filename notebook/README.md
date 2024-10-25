@@ -9,10 +9,11 @@ LLM
 
 - [ ] RoPE
 - [ ] swiglu backward
-- [ ] FlashAttention Backward
+- [x] FlashAttention Backward
 - [ ] DPO badcase analysis
 - [ ] LLM low-rank space measurement
 - [ ] CoT information analysis
+- [x] FP4 By bitsandbytes
 
 rl
 
