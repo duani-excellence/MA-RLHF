@@ -21,13 +21,14 @@ echo '-------------------------------------------------------'
 sft_dataset_name='qgallouedec/prm800k'
 model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft_step.py \
+deepspeed ./ma-rlhf/process_reward_model.py \
 	--dataset_name=${sft_dataset_name} \
 	--model_name=${model_pretrained_full_path} \
 	--seq_length=512 \
 	--output_name=${model_sft_step_lora_path} \
-	--use_QLora=False \
+	--use_QLora=True \
 	--batch_size=8 \
-	--use_flash_attention_2=False \
+	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--num_train_epochs=2 \
 	--gradient_accumulation_steps=4 \

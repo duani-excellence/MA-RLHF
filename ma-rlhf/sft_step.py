@@ -19,6 +19,12 @@ from transformers import (
     TrainingArguments,
     Trainer
 )
+
+from peft import (
+    LoraModel,
+    LoraConfig,
+)
+
 import os
 import torch
 from datasets import load_dataset
@@ -48,18 +54,22 @@ gradient_accumulation_steps = train_args.gradient_accumulation_steps
 learning_rate = train_args.learning_rate
 
 
-def create_sft_step_datasets(dataset_name, dataset_sub_name):
+def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
-    dataset = dataset.map(process_sft_step,
+    print(dataset)
+    dataset = dataset['train'].map(process_sft_step,
                            num_proc=24,
                            remove_columns=[
-                               'prompt', 'completion', 'labels']
+                               'prompt', 'completions', 'labels'],
+                            fn_kwargs={ "tokenizer": tokenizer},
+                            batched = False,
                            )
-    dataset = dataset["train"]
+
+    dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
     return dataset, None
 
 
-def create_model_tokenizer(name):
+def create_model_tokenizer(model_name):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
@@ -89,11 +99,12 @@ def create_model_tokenizer(name):
 
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
-    train_datasets, _ = create_sft_step_datasets(dataset_name, dataset_sub_name)
+    train_datasets, _ = create_sft_step_datasets(dataset_name, tokenizer)
     collator = DataCollatorForSFT(tokenizer=tokenizer)
 
     # peft
     peft_config = create_peft(is_peft)
+    model.add_adapter(peft_config)
 
     training_args = TrainingArguments(
         output_dir=output_name,
@@ -110,15 +121,13 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        # max_steps=10,
+        max_steps=100,
     )
 
     trainer = Trainer(
         model,
         args=training_args,
         train_dataset=train_datasets,
-        max_seq_length=seq_length,
-        peft_config=peft_config,
         tokenizer=tokenizer,
         data_collator=collator,
     )

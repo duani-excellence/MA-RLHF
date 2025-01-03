@@ -13,9 +13,9 @@ from utils import (
 )
 
 
-def process_sft_step(example):
-    question = example['prompt'][0]['content']
-    steps = example['completion']
+def process_sft_step(example, tokenizer = None):
+    question = example['prompt']
+    steps = example['completions']
 
     # 分词prompt
     prompt_format = format_prompt(question)
@@ -25,7 +25,7 @@ def process_sft_step(example):
     # 分词response
     response = ''
     for step in steps:
-        response = response + step['content'] + DEFINE_SEP_TOKEN
+        response = response + step + DEFINE_SEP_TOKEN
     response = response + tokenizer.eos_token
     response_encode = tokenizer.encode(response, return_tensors='pt')[0]
     response_encode = response_encode[1:]
@@ -57,9 +57,9 @@ def process_sft_step(example):
 label_map = {0: 36590, 1: 39589}
 
 
-def process_prm_step(example):
-    question = example['prompt'][0]['content']
-    steps = example['completion']
+def process_prm_step(example,  tokenizer = None):
+    question = example['prompt']
+    steps = example['completions']
     labels = example['labels']
 
     # 分词prompt
@@ -72,7 +72,7 @@ def process_prm_step(example):
     label_idx = []
 
     for step, label in zip(steps, labels):
-        response = step['content'] + DEFINE_SEP_TOKEN  # step的尾部加上sep token
+        response = step + DEFINE_SEP_TOKEN  # step的尾部加上sep token
         step_response_token_ids = tokenizer.encode(
             response, add_special_tokens=False)
 
@@ -101,9 +101,9 @@ def process_prm_step(example):
     return example
 
 
-def process_orm_step(example):
-    question = example['prompt'][0]['content']
-    steps = example['completion']
+def process_orm_step(example,  tokenizer = None):
+    question = example['prompt']
+    steps = example['completions']
     labels = example['labels']
 
     # 分词prompt
@@ -116,7 +116,7 @@ def process_orm_step(example):
     label_idx = []
 
     for step, label in zip(steps, labels):
-        response = step['content'] + DEFINE_SEP_TOKEN  # step的尾部加上sep token
+        response = step + DEFINE_SEP_TOKEN  # step的尾部加上sep token
         step_response_token_ids = tokenizer.encode(
             response, add_special_tokens=False)
 
@@ -130,7 +130,6 @@ def process_orm_step(example):
     # 拼接 prompt + response
     input_ids = torch.cat((prompt_encode, response_token_ids), dim=0)
     attention_mask = torch.ones_like(input_ids)
-    # attention_mask[place_indexs] = False
 
     # 创建 label， 在sep token里才有回归的标签
     place_indexs = place_indexs[-1] -1 # 仅最后一个sep token 才做回归

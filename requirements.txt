@@ -9,7 +9,7 @@ bitsandbytes
 sentencepiece
 scipy
 trl
-deepspeed
+deepspeed==0.14.4
 evaluate
 scikit-learn
 wandb
