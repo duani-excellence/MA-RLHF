@@ -10,6 +10,8 @@ model_pretrained_lora_path=${output_path}'/pretrained_lora'
 model_pretrained_full_path=${output_path}'/pretrained_full'
 model_sft_step_lora_path=${output_path}'/sft_step_lora'
 model_sft_step_full_path=${output_path}'/sft_step_full'
+model_prm_lora_path=${output_path}'/prm_lora'
+model_prm_full_path=${output_path}'/prm_full'
 
 
 echo '-------------------------------------------------------'
@@ -21,7 +23,6 @@ echo '-------------------------------------------------------'
 sft_dataset_name='qgallouedec/prm800k'
 model_pretrained_full_path=${base_model_path}
 deepspeed ./ma-rlhf/sft_step.py \
-deepspeed ./ma-rlhf/process_reward_model.py \
 	--dataset_name=${sft_dataset_name} \
 	--model_name=${model_pretrained_full_path} \
 	--seq_length=512 \
@@ -34,10 +35,37 @@ deepspeed ./ma-rlhf/process_reward_model.py \
 	--gradient_accumulation_steps=4 \
 	--learning_rate=1e-5
 
-#  # merge SFT with lora
-#  python ./ma-rlhf/merge_adapter.py \
-#  	--base_model_name=${model_pretrained_full_path} \
-#  	--model_name=${model_sft_step_lora_path} \
-#  	--merged_model_name=${model_sft_step_full	_path}
+ # merge SFT with lora
+ python ./ma-rlhf/merge_adapter.py \
+ 	--base_model_name=${model_pretrained_full_path} \
+ 	--model_name=${model_sft_step_lora_path} \
+ 	--merged_model_name=${model_sft_step_full_path}
 
+# for generate step-wise answer
+# bash ./scripts/run_generation_examples.sh ${model_sft_full_path} 512
+
+
+# # # stage: sft
+prm_dataset_name='qgallouedec/prm800k'
+# deepspeed ./ma-rlhf/sft_step.py \
+deepspeed ./ma-rlhf/process_reward_model.py \
+	--dataset_name=${prm_dataset_name} \
+	--model_name=${model_sft_step_full_path} \
+	--seq_length=512 \
+	--output_name=${model_prm_lora_path} \
+	--use_QLora=True \
+	--batch_size=8 \
+	--use_flash_attention_2=True \
+	--deepspeed_config_name=${deepspeed_config_name} \
+	--num_train_epochs=2 \
+	--gradient_accumulation_steps=4 \
+	--learning_rate=1e-5
+
+ # merge SFT with lora
+ python ./ma-rlhf/merge_adapter.py \
+ 	--base_model_name=${model_sft_full_path} \
+ 	--model_name=${model_prm_lora_path} \
+ 	--merged_model_name=$model_prm_full_path}
+
+# TODO: 1. Check PRM correctness, 2. PRM-search generate
 # bash ./scripts/run_generation_examples.sh ${model_sft_full_path} 512
