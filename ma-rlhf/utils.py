@@ -24,6 +24,10 @@ DEFINE_EOS_TOKEN = '''<|end_of_text|>'''
 DEFINE_PAD_TOKEN = '''<|reserved_special_token_0|>'''
 SYSTEM_PROMPT = '''You are MA-RLHF Chatbot, you should friendly answer the question'''
 
+# o1
+DEFINE_SEP_TOKEN = '''<|reserved_special_token_1|>'''  # seperate token, or step token
+DEFINE_POSTIVE_TOKEN = '''Postive'''
+DEFINE_NEGATIVE_TOKEN= '''Negative'''
 
 
 def is_main_process():
@@ -211,17 +215,6 @@ def formatting_finetune_func(example):
     return text
 
 
-# def formatting_reward_func(example):
-#     text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
-#     return text
-
-
-
-# def formatting_reward_func(example):
-#     text = f"###System: {SYSTEM_PROMPT}\n###Question: {example['question']}\n###Answer: {example['response_rejected']} {DEFINE_EOS_TOKEN}"
-#     return text
-
-
 def formatting_alpaca_func_bached(example):
     output_text = []
     for i, instruction in enumerate(example["instruction"]):
@@ -229,17 +222,10 @@ def formatting_alpaca_func_bached(example):
         output_text.append(text)
     return output_text
 
+
 def formatting_alpaca_func(example):
     return f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction']} {example['input']}\n###Answer: {example['output']} {DEFINE_EOS_TOKEN}"
 
 
 def formatting_alpaca_chinese_func(example):
     return f"###System: {SYSTEM_PROMPT}\n###Question: {example['instruction_zh']} {example['input_zh']}\n###Answer: {example['output_zh']}{DEFINE_EOS_TOKEN}"
-
-# def formatting_hhrlhf_func(example):
-#     random_int = random.randint(0, 1)
-#     random_choice = bool(random_int)
-#     text = example["chosen"] if random_choice == True else example["rejected"]
-#     text = re.sub(r'\n\nHuman:', '\n###Question:', text)
-#     text = re.sub(r'\n\nAssistant:', '\n###Answer:', text)
-#     text = text[1:] + ' ' + {DEFINE_EOS_TOKEN}
