@@ -28,6 +28,8 @@ SYSTEM_PROMPT = '''You are MA-RLHF Chatbot, you should friendly answer the quest
 DEFINE_SEP_TOKEN = '''<|reserved_special_token_1|>'''  # seperate token, or step token
 DEFINE_POSTIVE_TOKEN = '''Postive'''
 DEFINE_NEGATIVE_TOKEN= '''Negative'''
+STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning.\n'''
+PRM_INSTRUCTION = '''Scoring step-by-step reasoning.\n'''
 
 
 def is_main_process():

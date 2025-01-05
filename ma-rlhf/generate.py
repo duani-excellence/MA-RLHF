@@ -41,6 +41,6 @@ terminators = [
 input = format_prompt(instruction)
 inputs = tokenizer(input, return_tensors='pt').to(device)
 output = model.generate(inputs['input_ids'],max_new_tokens=max_new_tokens, do_sample=False, temperature=1.0, eos_token_id=terminators)
-output = tokenizer.decode(output[0], skip_special_tokens=True) # set `skip_special_tokens=False` to debug
+output = tokenizer.decode(output[0], skip_special_tokens=False) # set `skip_special_tokens=False` to debug
 
 print(output)

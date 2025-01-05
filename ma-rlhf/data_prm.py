@@ -10,15 +10,18 @@ from transformers import (
 from utils import (
     format_prompt,
     DEFINE_SEP_TOKEN,
+    STEP_INSTRUCTION,
+    PRM_INSTRUCTION,
 )
 
 
+# STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning.\n'''
 def process_sft_step(example, tokenizer = None):
     question = example['prompt']
     steps = example['completions']
 
     # 分词prompt
-    prompt_format = format_prompt(question)
+    prompt_format = format_prompt(STEP_INSTRUCTION + question)
     prompt_encode = tokenizer.encode(prompt_format, return_tensors='pt')[0]
     prompt_len = prompt_encode.shape[0]
 
@@ -63,7 +66,7 @@ def process_prm_step(example,  tokenizer = None):
     labels = example['labels']
 
     # 分词prompt
-    prompt_format = format_prompt(question)
+    prompt_format = format_prompt(PRM_INSTRUCTION + question)
     prompt_encode = tokenizer.encode(prompt_format, return_tensors='pt')[0]
     prompt_len = prompt_encode.shape[0]
 

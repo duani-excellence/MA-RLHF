@@ -27,6 +27,7 @@ from peft import (
 
 import os
 import torch
+from torch.utils.data import DataLoader, Dataset
 from datasets import load_dataset
 from accelerate import Accelerator
 import random
@@ -57,7 +58,7 @@ learning_rate = train_args.learning_rate
 def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
     print(dataset)
-    dataset = dataset['train'].map(process_sft_step,
+    dataset = dataset['test'].map(process_sft_step,
                            num_proc=24,
                            remove_columns=[
                                'prompt', 'completions', 'labels'],
@@ -66,6 +67,7 @@ def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
                            )
 
     dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
+    print(dataset)
     return dataset, None
 
 
@@ -99,8 +101,20 @@ def create_model_tokenizer(model_name):
 
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
-    train_datasets, _ = create_sft_step_datasets(dataset_name, tokenizer)
+    train_datasets, _ = create_sft_step_datasets(dataset_name, tokenizer, seq_length=seq_length)
     collator = DataCollatorForSFT(tokenizer=tokenizer)
+
+    # debug data
+    # data_loader = DataLoader(
+    #     train_datasets,                   # 数据集
+    #     batch_size=2,                     # 批次大小
+    #     shuffle=True,                     # 是否打乱数据
+    #     collate_fn=collator,              # 自定义数据整理函数
+    # )
+    # for batch in data_loader:
+    #     print(batch)
+    #     break
+    # return
 
     # peft
     peft_config = create_peft(is_peft)
@@ -121,7 +135,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        max_steps=100,
+        # max_steps=100,
     )
 
     trainer = Trainer(

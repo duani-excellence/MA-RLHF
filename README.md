@@ -43,6 +43,8 @@ cd MA-RLHF
 
 Create Dev Environment
 
+如果使用`3090`多卡，可以选择`Ubuntu20.04`, `CUDA11.8` 配置的机器
+
 ```bash
 conda create -n llm python=3.11
 conda activate llm
@@ -473,6 +475,11 @@ wget https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.1.post1
 ```
 
 Thanks Michale build unsloth &  reward evaluation code
+
+### Install QA
+
+> meet 'FileNotFoundError: [Errno 2] No such file or directory: ':/usr/local/cuda-11.8:/usr/local/cuda-11.8/bin/nvcc''
+> [link](https://github.com/pyscf/gpu4pyscf/issues/23) : export CUDA_HOME=/usr/local/cuda
 
 ## About Me
 
