@@ -46,8 +46,10 @@ Create Dev Environment
 如果使用`3090`多卡，可以选择`Ubuntu20.04`, `CUDA11.8` 配置的机器
 
 ```bash
+
 conda create -n llm python=3.11
 conda activate llm
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 pip install -r requirements.txt
 pip install flash-attn # option
 ```
@@ -84,6 +86,7 @@ when you use cpu-offload, set `DS_SKIP_CUDA_CHECK=1`
 - ⚠️ Before you start training, you must run `notebook/LLM_Pipeline_Fintune_LLaMA2_QLoRA_RLHF_20240318.ipynb`
 - If you want to do continual pretraining, you cloud run `run_7b_cpt.sh` before custom your own dataset: `scripts/prepare_dataset.sh`, we make a easy examples `med_qa_textbook` dataset
 - We ONLY provide standard `Llama-3` training pipeline
+- 在训练前注意先在`huggingface` 上找到Llama的模型申请权限, 邮箱使用"@gmail.com"较容易通过申请。
 
 ### Required
 
@@ -479,7 +482,7 @@ Thanks Michale build unsloth &  reward evaluation code
 ### Install QA
 
 > meet 'FileNotFoundError: [Errno 2] No such file or directory: ':/usr/local/cuda-11.8:/usr/local/cuda-11.8/bin/nvcc''
-> [link](https://github.com/pyscf/gpu4pyscf/issues/23) : export CUDA_HOME=/usr/local/cuda
+> [link](https://github.com/pyscf/gpu4pyscf/issues/23) : `export CUDA_HOME=/usr/local/cuda`
 
 ## About Me
 

@@ -58,7 +58,7 @@ learning_rate = train_args.learning_rate
 def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
     print(dataset)
-    dataset = dataset['test'].map(process_sft_step,
+    dataset = dataset['train'].map(process_sft_step,
                            num_proc=24,
                            remove_columns=[
                                'prompt', 'completions', 'labels'],

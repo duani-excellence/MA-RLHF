@@ -29,8 +29,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 # tokenizer.pad_token_id = tokenizer.eos_token_id
 # model.config.pad_token = DEFINE_EOS_TOKEN
 # model.config.pad_token_id = tokenizer.eos_token_id
-model.pad_token_id = tokenizer.pad_token_id
-model.pad_token = tokenizer.pad_token
+# model.pad_token_id = tokenizer.pad_token_id
+# model.pad_token = tokenizer.pad_token
 
 terminators = [
     tokenizer.eos_token_id,
