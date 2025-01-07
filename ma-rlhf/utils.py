@@ -26,9 +26,9 @@ SYSTEM_PROMPT = '''You are MA-RLHF Chatbot, you should friendly answer the quest
 
 # o1
 DEFINE_SEP_TOKEN = '''<|reserved_special_token_1|>'''  # seperate token, or step token
-DEFINE_POSTIVE_TOKEN = '''Postive'''
+DEFINE_POSITIVE_TOKEN = '''Positive'''
 DEFINE_NEGATIVE_TOKEN= '''Negative'''
-STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning.\n'''
+STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
 PRM_INSTRUCTION = '''Scoring step-by-step reasoning.\n'''
 
 
@@ -64,10 +64,10 @@ def create_peft(peft_flag: bool = False) -> LoraConfig:
     else:
         # default peft lora is Q_Lora K_Lora
         peft_config = LoraConfig(
-            r=32,
+            r=64,
             lora_alpha=8,
             bias="none",
-            lora_dropout=0.05,
+            # lora_dropout=0.05,
             task_type="CAUSAL_LM",
         )
         return peft_config

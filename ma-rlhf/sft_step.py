@@ -8,6 +8,7 @@ from utils import (
 
 from data_prm import (
     process_sft_step,
+    process_instruction,
     DataCollatorForSFT
 )
 
@@ -23,6 +24,7 @@ from transformers import (
 from peft import (
     LoraModel,
     LoraConfig,
+    get_peft_model,
 )
 
 import os
@@ -70,6 +72,21 @@ def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     print(dataset)
     return dataset, None
 
+def create_sft_instruction_datasets(dataset_name, tokenizer, seq_length=1024):
+    dataset = load_dataset('xiaodongguaAIGC/alpaca_en_zh_ruozhiba')
+    print(dataset)
+    dataset = dataset['train'].map(process_instruction,
+                           num_proc=24,
+                           remove_columns=[
+                               'instruction', 'input', 'output'],
+                            fn_kwargs={ "tokenizer": tokenizer},
+                            batched = False,
+                           )
+
+    dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
+    print(dataset)
+    return dataset, None
+
 
 def create_model_tokenizer(model_name):
     # QLoRA
@@ -87,13 +104,16 @@ def create_model_tokenizer(model_name):
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name,
-                                              add_bos_token=False,
+                                              add_bos_token=True,
                                               padding=True,
-                                              truncation=True)
+                                              truncation=True,
+                                              use_cache=True)
     tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
     tokenizer.add_special_tokens({'sep_token': DEFINE_SEP_TOKEN})
     model.pad_token_id = tokenizer.pad_token_id
     model.pad_token = tokenizer.pad_token
+    model.sep_token_id = tokenizer.sep_token_id
+    model.sep_token = tokenizer.sep_token
 
     return model, tokenizer
 
@@ -102,9 +122,18 @@ def create_model_tokenizer(model_name):
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
     train_datasets, _ = create_sft_step_datasets(dataset_name, tokenizer, seq_length=seq_length)
+    # train_datasets, _ = create_sft_instruction_datasets(dataset_name, tokenizer, seq_length=seq_length)
     collator = DataCollatorForSFT(tokenizer=tokenizer)
 
-    # debug data
+
+    # peft
+    peft_config = create_peft(is_peft)
+    model.add_adapter(peft_config)
+    # model = get_peft_model(model, peft_config)
+    # print(model)
+    # model.print_trainable_parameters()
+
+
     # data_loader = DataLoader(
     #     train_datasets,                   # 数据集
     #     batch_size=2,                     # 批次大小
@@ -112,13 +141,20 @@ def train():
     #     collate_fn=collator,              # 自定义数据整理函数
     # )
     # for batch in data_loader:
-    #     print(batch)
+    #     if is_main_process():
+    #         print(batch)
+    #         # output = model(**batch)
+    #         model.to('cuda:0')
+    #         output = model(input_ids = batch['input_ids'].to('cuda:0'),
+    #                         attention_mask = batch['attention_mask'].to('cuda:0'),
+    #                         labels = batch['labels'].to('cuda:0'))
+    #         loss = output.loss
+    #         print(loss)
+    #         loss.backward()
+    #         # print(output)
     #     break
     # return
 
-    # peft
-    peft_config = create_peft(is_peft)
-    model.add_adapter(peft_config)
 
     training_args = TrainingArguments(
         output_dir=output_name,
@@ -128,7 +164,7 @@ def train():
         gradient_checkpointing=True,
         bf16=True,
         learning_rate=learning_rate,
-        warmup_ratio=0.1,
+        warmup_ratio=0.05,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
@@ -142,7 +178,6 @@ def train():
         model,
         args=training_args,
         train_dataset=train_datasets,
-        tokenizer=tokenizer,
         data_collator=collator,
     )
     trainer.train()

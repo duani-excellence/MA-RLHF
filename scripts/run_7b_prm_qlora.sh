@@ -22,8 +22,8 @@ date
 echo '-------------------------------------------------------'
 
 
-# # # # stage: sft
-sft_dataset_name='xiaodongguaAIGC/math_step_sft'
+# # # stage: sft
+sft_dataset_name='xiaodongguaAIGC/GSM8k_step_sft' # GSM8k_step_sft
 deepspeed ./ma-rlhf/sft_step.py \
 	--dataset_name=${sft_dataset_name} \
 	--model_name=${model_pretrained_full_path} \
@@ -33,8 +33,8 @@ deepspeed ./ma-rlhf/sft_step.py \
 	--batch_size=8 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=2 \
-	--gradient_accumulation_steps=1 \
+	--num_train_epochs=1 \
+	--gradient_accumulation_steps=2 \
 	--learning_rate=2e-5
 
  # merge SFT with lora
@@ -43,7 +43,6 @@ deepspeed ./ma-rlhf/sft_step.py \
  	--model_name=${model_sft_step_lora_path} \
  	--merged_model_name=${model_sft_step_full_path}
 
-# for generate step-wise answer
 
 echo '-----------------------------step-sft model-------------------------------'
 

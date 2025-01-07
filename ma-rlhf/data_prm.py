@@ -31,7 +31,7 @@ def process_sft_step(example, tokenizer = None):
         response = response + step + DEFINE_SEP_TOKEN
     response = response + tokenizer.eos_token
     response_encode = tokenizer.encode(response, return_tensors='pt')[0]
-    response_encode = response_encode[1:]
+    response_encode = response_encode[1:] # ignore <bos> token
 
     # 拼接 prompt + response
     input_ids = torch.cat((prompt_encode, response_encode), dim=0)
@@ -64,6 +64,51 @@ def process_prm_step(example,  tokenizer = None):
     question = example['prompt']
     steps = example['completions']
     labels = example['labels']
+
+    # 分词prompt
+    prompt_format = format_prompt(PRM_INSTRUCTION + question)
+    prompt_encode = tokenizer.encode(prompt_format, return_tensors='pt')[0]
+    prompt_len = prompt_encode.shape[0]
+
+    response_token_ids = []
+    place_indexs = []
+    label_idx = []
+
+    for step, label in zip(steps, labels):
+        response = step + DEFINE_SEP_TOKEN  # step的尾部加上sep token
+        step_response_token_ids = tokenizer.encode(
+            response, add_special_tokens=False)
+
+        response_token_ids.extend(step_response_token_ids)
+        place_indexs.append(len(response_token_ids) + prompt_len)
+        label_idx.append(label_map[label])
+
+    response_token_ids.extend([tokenizer.eos_token_id])  # 完整结束后增加eos token
+    response_token_ids = torch.tensor(response_token_ids)
+
+    # 拼接 prompt + response
+    input_ids = torch.cat((prompt_encode, response_token_ids), dim=0)
+    attention_mask = torch.ones_like(input_ids)
+    # attention_mask[place_indexs] = False
+
+    # 创建 label， 在sep token里才有回归的标签
+    # 这里相当于一长串数据，可以一次性回归多个sep_token 对应的correctness的标签
+    place_indexs = [idx - 1 for idx in place_indexs]
+    prompt_label = torch.ones_like(input_ids) * -100
+    prompt_label[place_indexs] = torch.tensor(label_idx, dtype=torch.long)
+
+    example['input_ids'] = input_ids
+    example['attention_mask'] = attention_mask
+    example['label_ids'] = prompt_label
+
+    return example
+
+
+
+def process_instruction(example,  tokenizer = None):
+    question = example['instruction'] + example['input']
+    steps = [example['output']]
+    labels = [True]
 
     # 分词prompt
     prompt_format = format_prompt(PRM_INSTRUCTION + question)
