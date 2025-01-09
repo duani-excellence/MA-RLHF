@@ -9,7 +9,7 @@ from utils import (
 from data_prm import (
     process_sft_step,
     process_instruction,
-    DataCollatorForSFT
+    DataCollatorForSFT,
 )
 
 from transformers import (
@@ -29,6 +29,7 @@ from peft import (
 
 import os
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from datasets import load_dataset
 from accelerate import Accelerator
@@ -66,10 +67,11 @@ def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
                                'prompt', 'completions', 'labels'],
                             fn_kwargs={ "tokenizer": tokenizer},
                             batched = False,
+                            load_from_cache_file=False,
                            )
 
     dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
-    print(dataset)
+    print(dataset[0])
     return dataset, None
 
 def create_sft_instruction_datasets(dataset_name, tokenizer, seq_length=1024):
@@ -128,28 +130,47 @@ def train():
 
     # peft
     peft_config = create_peft(is_peft)
-    model.add_adapter(peft_config)
-    # model = get_peft_model(model, peft_config)
+
+    '''
+    https://github.com/huggingface/peft/issues/137
+    '''
+    model.enable_input_require_grads()
+
+    model = get_peft_model(model, peft_config)
     # print(model)
-    # model.print_trainable_parameters()
+    model.print_trainable_parameters()
+
 
 
     # data_loader = DataLoader(
     #     train_datasets,                   # 数据集
-    #     batch_size=2,                     # 批次大小
+    #     batch_size=8,                     # 批次大小
     #     shuffle=True,                     # 是否打乱数据
     #     collate_fn=collator,              # 自定义数据整理函数
     # )
+    # loss_fn = torch.nn.CrossEntropyLoss()
     # for batch in data_loader:
     #     if is_main_process():
     #         print(batch)
+    #         # batch['labels'] = torch.roll(batch['labels'],  shifts = -2)
+    #         print( batch['input_ids'].shape)
+    #         print( batch['attention_mask'].shape)
+    #         print( batch['labels'].shape)
+    #         print(batch['labels'])
     #         # output = model(**batch)
     #         model.to('cuda:0')
     #         output = model(input_ids = batch['input_ids'].to('cuda:0'),
     #                         attention_mask = batch['attention_mask'].to('cuda:0'),
-    #                         labels = batch['labels'].to('cuda:0'))
-    #         loss = output.loss
+    #                         labels = batch['labels'].to('cuda:0')
+    #                         )
+
+    #         print(output.logits.shape)
+    #         logits = output.logits
+
+    #         batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch crossentropy
+    #         loss = loss_fn(logits[0,:], batch['labels'].to('cuda:0')[0,:] )
     #         print(loss)
+    #         print('model:', output.loss)
     #         loss.backward()
     #         # print(output)
     #     break

@@ -40,11 +40,15 @@ def process_sft_step(example, tokenizer = None):
     # 创建 label
     prompt_label = torch.clone(input_ids)
     prompt_label[:prompt_len] = -100  # 非response ignore
-    labels = torch.roll(prompt_label, shifts=-1)  # label左移动一位，形成casual mask
+    prompt_label[-1] = -100  # 非response ignore
+
+    # 不用手动shift， llama model计算loss时会自动shift
+    # prompt_label = torch.roll(prompt_label, shifts=-1)  # label左移动一位，形成casual mask
 
     example['input_ids'] = input_ids
     example['attention_mask'] = attention_mask
-    example['label_ids'] = labels
+    example['label_ids'] = prompt_label
+    # example['labels'] = prompt_label
     # example['len']=prompt_len
 
     return example
@@ -224,7 +228,7 @@ class DataCollatorForSFT(DataCollatorWithPadding):
         target_labels = []
 
         for labels in labels_list:
-            labels = labels + [-100] * (max_len - len(labels))
+            labels = [-100] * (max_len - len(labels)) + labels
             target_labels.append(labels)
         batch["labels"] = torch.tensor(target_labels)
 
