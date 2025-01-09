@@ -72,7 +72,6 @@ def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
                            )
 
     dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
-    print(dataset[0])
     return dataset, None
 
 def create_model_tokenizer(model_name):

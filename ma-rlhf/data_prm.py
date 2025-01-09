@@ -97,9 +97,12 @@ def process_prm_step(example,  tokenizer = None):
 
     # 创建 label， 在sep token里才有回归的标签
     # 这里相当于一长串数据，可以一次性回归多个sep_token 对应的correctness的标签
-    place_indexs = [idx - 1 for idx in place_indexs]
+    place_indexs = [idx for idx in place_indexs] # 同step sft
     prompt_label = torch.ones_like(input_ids) * -100
     prompt_label[place_indexs] = torch.tensor(label_idx, dtype=torch.long)
+
+    print(input_ids)
+    print(prompt_label)
 
     example['input_ids'] = input_ids
     example['attention_mask'] = attention_mask

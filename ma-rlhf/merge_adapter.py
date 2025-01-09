@@ -20,7 +20,7 @@ def merge(model_base_name, model_adapter_name, model_merge_name):
     print('load base model')
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_base_name,
+        model_adapter_name,
         trust_remote_code=True,
     )
 

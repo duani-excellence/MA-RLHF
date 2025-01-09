@@ -37,7 +37,8 @@ deepspeed ./ma-rlhf/sft_step.py \
 	--gradient_accumulation_steps=8 \
 	--learning_rate=2e-5
 
-#  # merge SFT with lora
+#  merge SFT with lora
+#  由于lm_head lora, 合并时间较长。
 #  python ./ma-rlhf/merge_adapter.py \
 #  	--base_model_name=${model_pretrained_full_path} \
 #  	--model_name=${model_sft_step_lora_path} \
@@ -59,10 +60,10 @@ bash ./scripts/run_step_generation_examples.sh ${model_sft_step_lora_path} 512
 # deepspeed ./ma-rlhf/process_reward_model.py \
 # 	--dataset_name=${prm_dataset_name} \
 # 	--model_name=${model_sft_step_full_path} \
-# 	--seq_length=512 \
+# 	--seq_length=256 \
 # 	--output_name=${model_prm_lora_path} \
 # 	--use_QLora=True \
-# 	--batch_size=8 \
+# 	--batch_size=32 \
 # 	--use_flash_attention_2=True \
 # 	--deepspeed_config_name=${deepspeed_config_name} \
 # 	--num_train_epochs=2 \
