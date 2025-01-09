@@ -4,6 +4,7 @@ from utils import (
     is_main_process,
     create_peft,
     DEFINE_SEP_TOKEN,
+    create_peft_lm_head,
 )
 
 from data_prm import (
@@ -74,22 +75,6 @@ def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     print(dataset[0])
     return dataset, None
 
-def create_sft_instruction_datasets(dataset_name, tokenizer, seq_length=1024):
-    dataset = load_dataset('xiaodongguaAIGC/alpaca_en_zh_ruozhiba')
-    print(dataset)
-    dataset = dataset['train'].map(process_instruction,
-                           num_proc=24,
-                           remove_columns=[
-                               'instruction', 'input', 'output'],
-                            fn_kwargs={ "tokenizer": tokenizer},
-                            batched = False,
-                           )
-
-    dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
-    print(dataset)
-    return dataset, None
-
-
 def create_model_tokenizer(model_name):
     # QLoRA
     bnb_config = BitsAndBytesConfig(
@@ -124,24 +109,18 @@ def create_model_tokenizer(model_name):
 def train():
     model, tokenizer = create_model_tokenizer(model_name)
     train_datasets, _ = create_sft_step_datasets(dataset_name, tokenizer, seq_length=seq_length)
-    # train_datasets, _ = create_sft_instruction_datasets(dataset_name, tokenizer, seq_length=seq_length)
     collator = DataCollatorForSFT(tokenizer=tokenizer)
-
-
-    # peft
-    peft_config = create_peft(is_peft)
+    peft_config = create_peft_lm_head(is_peft)
 
     '''
     https://github.com/huggingface/peft/issues/137
     '''
     model.enable_input_require_grads()
-
     model = get_peft_model(model, peft_config)
-    # print(model)
     model.print_trainable_parameters()
 
 
-
+    # for debug sft, ignore
     # data_loader = DataLoader(
     #     train_datasets,                   # 数据集
     #     batch_size=8,                     # 批次大小
@@ -167,7 +146,7 @@ def train():
     #         print(output.logits.shape)
     #         logits = output.logits
 
-    #         batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch crossentropy
+    #         batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch cross entropy
     #         loss = loss_fn(logits[0,:], batch['labels'].to('cuda:0')[0,:] )
     #         print(loss)
     #         print('model:', output.loss)

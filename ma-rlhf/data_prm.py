@@ -40,7 +40,7 @@ def process_sft_step(example, tokenizer = None):
     # 创建 label
     prompt_label = torch.clone(input_ids)
     prompt_label[:prompt_len] = -100  # 非response ignore
-    prompt_label[-1] = -100  # 非response ignore
+    # prompt_label[-1] = -100  # 非response ignore
 
     # 不用手动shift， llama model计算loss时会自动shift
     # prompt_label = torch.roll(prompt_label, shifts=-1)  # label左移动一位，形成casual mask

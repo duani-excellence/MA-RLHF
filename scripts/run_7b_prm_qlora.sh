@@ -33,20 +33,20 @@ deepspeed ./ma-rlhf/sft_step.py \
 	--batch_size=8 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=1 \
-	--gradient_accumulation_steps=2 \
+	--num_train_epochs=2 \
+	--gradient_accumulation_steps=8 \
 	--learning_rate=2e-5
 
- # merge SFT with lora
- python ./ma-rlhf/merge_adapter.py \
- 	--base_model_name=${model_pretrained_full_path} \
- 	--model_name=${model_sft_step_lora_path} \
- 	--merged_model_name=${model_sft_step_full_path}
+#  # merge SFT with lora
+#  python ./ma-rlhf/merge_adapter.py \
+#  	--base_model_name=${model_pretrained_full_path} \
+#  	--model_name=${model_sft_step_lora_path} \
+#  	--merged_model_name=${model_sft_step_full_path}
 
 
-echo '-----------------------------step-sft model-------------------------------'
+# echo '-----------------------------step-sft model-------------------------------'
 
-bash ./scripts/run_step_generation_examples.sh ${model_sft_step_full_path} 512
+bash ./scripts/run_step_generation_examples.sh ${model_sft_step_lora_path} 512
 
 # echo '----------------------------base model----------------------------------'
 

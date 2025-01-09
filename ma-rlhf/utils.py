@@ -46,7 +46,7 @@ def create_model_tokenizer(name):
     print('device map: ', device_map)
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+        name,
         quantization_config=bnb_config,
         device_map=device_map,
         # torch_dtype=torch.bfloat16,
@@ -69,6 +69,25 @@ def create_peft(peft_flag: bool = False) -> LoraConfig:
             bias="none",
             # lora_dropout=0.05,
             task_type="CAUSAL_LM",
+        )
+        return peft_config
+
+
+def create_peft_lm_head(peft_flag: bool = False) -> LoraConfig:
+    '''
+    当新加入step token时，如果不对LM_head 加lora, 会导致难预测出step token
+    '''
+    if peft_flag == False:
+        return None
+    else:
+        # default peft lora is Q_Lora K_Lora
+        peft_config = LoraConfig(
+            r=32,
+            lora_alpha=4,
+            bias="none",
+            # lora_dropout=0.05,
+            task_type="CAUSAL_LM",
+            target_modules = ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'lm_head'],
         )
         return peft_config
 
