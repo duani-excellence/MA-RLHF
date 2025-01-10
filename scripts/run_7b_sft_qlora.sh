@@ -1,6 +1,7 @@
 # 完整运行
 
-base_model_path='meta-llama/Meta-Llama-3-8B'
+# base_model_path='meta-llama/Meta-Llama-3-8B'
+base_model_path='meta-llama/Llama-3.1-8B'
 deepspeed_config_name=./config/ds.json
 output_path='./output'
 

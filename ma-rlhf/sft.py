@@ -1,7 +1,7 @@
 import os
 import torch
 from datasets import load_dataset, load_from_disk, concatenate_datasets, DatasetDict
-from trl import SFTTrainer
+from trl import SFTTrainer, SFTConfig
 from trl.trainer import ConstantLengthDataset
 from trl.trainer.utils import DataCollatorForCompletionOnlyLM
 from accelerate import Accelerator
@@ -115,7 +115,7 @@ def train():
     # peft
     peft_config = create_peft(is_peft)
 
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         output_dir=output_name,
         save_strategy='epoch',
         logging_steps=1,
@@ -130,6 +130,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
+        max_seq_length=seq_length,
         # max_steps=10,
     )
 
@@ -137,13 +138,13 @@ def train():
         model,
         args=training_args,
         train_dataset=train_datasets,
-        max_seq_length=seq_length,
+        # max_seq_length=seq_length,
         peft_config=peft_config,
-        packing=False,
+        # packing=False,
         tokenizer=tokenizer,
         data_collator=collator,
         formatting_func=format_fun,
-        dataset_num_proc=24,
+        # dataset_num_proc=24,
     )
     trainer.train()
     trainer.save_model(output_name)

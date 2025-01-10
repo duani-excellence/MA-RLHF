@@ -119,23 +119,27 @@ def train():
     model.print_trainable_parameters()
 
 
-    # for debug sft, ignore
+    # # for debug sft, ignore
     # data_loader = DataLoader(
     #     train_datasets,                   # 数据集
-    #     batch_size=8,                     # 批次大小
+    #     batch_size=4,                     # 批次大小
     #     shuffle=True,                     # 是否打乱数据
     #     collate_fn=collator,              # 自定义数据整理函数
     # )
     # loss_fn = torch.nn.CrossEntropyLoss()
+    # i = 0
     # for batch in data_loader:
     #     if is_main_process():
-    #         print(batch)
-    #         # batch['labels'] = torch.roll(batch['labels'],  shifts = -2)
-    #         print( batch['input_ids'].shape)
-    #         print( batch['attention_mask'].shape)
-    #         print( batch['labels'].shape)
-    #         print(batch['labels'])
+    #         # print(batch)
+    #         # print( batch['input_ids'].shape)
+    #         # print( batch['attention_mask'].shape)
+    #         # print( batch['labels'].shape)
+    #         # print(batch['labels'])
     #         # output = model(**batch)
+    #         print('-'*100)
+
+    #         # batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch cross entropy
+
     #         model.to('cuda:0')
     #         output = model(input_ids = batch['input_ids'].to('cuda:0'),
     #                         attention_mask = batch['attention_mask'].to('cuda:0'),
@@ -151,7 +155,9 @@ def train():
     #         print('model:', output.loss)
     #         loss.backward()
     #         # print(output)
-    #     break
+    #         i = i + 1
+    #     if i == 100:
+    #         break
     # return
 
 
