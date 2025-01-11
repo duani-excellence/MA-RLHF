@@ -18,13 +18,5 @@
   },
   "gradient_clipping": 1.0,
   "prescale_gradients": false,
-  "wall_clock_breakdown": false,
-  "hybrid_engine": {
-    "enabled": true,
-    "max_out_tokens": 512,
-    "inference_tp_size": 1,
-    "release_inference_cache": false,
-    "pin_parameters": true,
-    "tp_gather_partition_size": 8
-  }
+  "wall_clock_breakdown": false
 }

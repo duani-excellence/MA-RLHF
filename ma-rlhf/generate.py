@@ -4,8 +4,7 @@ from numpy import False_
 from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser
 from utils import ScriptArguments, format_prompt
 import torch
-from utils import DEFINE_EOS_TOKEN
-import deepspeed
+from utils import DEFINE_EOS_TOKEN, DEFINE_SEP_TOKEN
 
 parser = HfArgumentParser(ScriptArguments)
 train_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
@@ -13,6 +12,7 @@ train_args: ScriptArguments = parser.parse_args_into_dataclasses()[0]
 model_name = train_args.model_name
 instruction = train_args.prompt
 max_new_tokens = train_args.max_new_tokens
+step_generate = train_args.step_generate
 
 device = 'cuda:0'
 model = AutoModelForCausalLM.from_pretrained(
@@ -20,6 +20,7 @@ model = AutoModelForCausalLM.from_pretrained(
     # use_flash_attention_2=True,
     trust_remote_code=True,
     # load_in_4bit=True,
+    torch_dtype=torch.bfloat16,
     device_map='auto'
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
@@ -43,4 +44,9 @@ inputs = tokenizer(input, return_tensors='pt').to(device)
 output = model.generate(inputs['input_ids'],max_new_tokens=max_new_tokens, do_sample=False, temperature=1.0, eos_token_id=terminators)
 output = tokenizer.decode(output[0], skip_special_tokens=False) # set `skip_special_tokens=False` to debug
 
-print(output)
+print(step_generate)
+if step_generate:
+    output = output.replace(DEFINE_SEP_TOKEN, " [SEP]\n")
+    print(output)
+else:
+    print(output)

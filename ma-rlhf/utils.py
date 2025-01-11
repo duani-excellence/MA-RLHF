@@ -29,6 +29,9 @@ DEFINE_SEP_TOKEN = '''<|reserved_special_token_1|>'''  # seperate token, or step
 DEFINE_POSITIVE_TOKEN = '''Positive'''
 DEFINE_NEGATIVE_TOKEN= '''Negative'''
 STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
+PRM800K_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
+MATH_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. \n'''
+GSM8K_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
 PRM_INSTRUCTION = '''Scoring step-by-step reasoning.\n'''
 
 
@@ -53,7 +56,7 @@ def create_model_tokenizer(name):
         # use_flash_attention_2=True # gpt 2 not support flash attention2
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(name, use_fast=True)
 
     return model, tokenizer
 
@@ -82,8 +85,8 @@ def create_peft_lm_head(peft_flag: bool = False) -> LoraConfig:
     else:
         # default peft lora is Q_Lora K_Lora
         peft_config = LoraConfig(
-            r=32,
-            lora_alpha=4,
+            r=64,
+            lora_alpha=8,
             bias="none",
             # lora_dropout=0.05,
             task_type="CAUSAL_LM",
@@ -220,6 +223,8 @@ class ScriptArguments:
     merge_checkpoint_type: Optional[str] = field(default='LM', metadata={"help": "merge check point"})
 
     use_qlora_double_quant: Optional[bool] = field(default=False, metadata={"help": "merge check point"})
+
+    step_generate: Optional[bool] = field(default=False, metadata={"help": "step generation"})
 
 def format_prompt_answer(question, answer):
     '''for generation'''

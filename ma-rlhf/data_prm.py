@@ -12,6 +12,9 @@ from utils import (
     DEFINE_SEP_TOKEN,
     STEP_INSTRUCTION,
     PRM_INSTRUCTION,
+    MATH_STEP_INSTRUCTION,
+    GSM8K_STEP_INSTRUCTION,
+    PRM800K_STEP_INSTRUCTION,
 )
 
 
@@ -20,16 +23,25 @@ def process_sft_step(example, tokenizer = None):
     question = example['prompt']
     steps = example['completions']
 
+    instruction_map = {'PRM800K': PRM800K_STEP_INSTRUCTION,
+                        'MATH': MATH_STEP_INSTRUCTION,
+                        'GSM8K': GSM8K_STEP_INSTRUCTION}
+
     # 分词prompt
-    prompt_format = format_prompt(STEP_INSTRUCTION + question)
+    current_instruction = instruction_map[example['type']]
+    prompt_format = format_prompt(current_instruction + question)
     prompt_encode = tokenizer.encode(prompt_format, return_tensors='pt')[0]
     prompt_len = prompt_encode.shape[0]
 
     # 分词response
     response = ''
     for step in steps:
-        response = response + step + DEFINE_SEP_TOKEN
-    response = response + tokenizer.eos_token
+        response = response + step
+        if example['is_step']:
+            response = response + DEFINE_SEP_TOKEN
+
+    if example['is_end']:
+        response = response + tokenizer.eos_token
     response_encode = tokenizer.encode(response, return_tensors='pt')[0]
     response_encode = response_encode[1:] # ignore <bos> token
 

@@ -62,16 +62,22 @@ learning_rate = train_args.learning_rate
 def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
     print(dataset)
+
+    dataset['train'] = dataset['train'].filter(lambda x: x["is_step"] == True and x["is_end"] == True,
+                                            batched=False)
+
+
     dataset = dataset['train'].map(process_sft_step,
                            num_proc=24,
                            remove_columns=[
-                               'prompt', 'completions', 'labels'],
+                               'prompt', 'completions', 'labels', 'is_step', 'is_end', 'type'],
                             fn_kwargs={ "tokenizer": tokenizer},
                             batched = False,
                             load_from_cache_file=False,
                            )
 
     dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
+    print(dataset)
     return dataset, None
 
 def create_model_tokenizer(model_name):
@@ -82,7 +88,7 @@ def create_model_tokenizer(model_name):
     device_map = {"": Accelerator().local_process_index}
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config if is_peft else None,
+        # quantization_config=bnb_config if is_peft else None,
         device_map=device_map,
         use_flash_attention_2=use_flash_attention_2,
         trust_remote_code=True,
@@ -93,7 +99,10 @@ def create_model_tokenizer(model_name):
                                               add_bos_token=True,
                                               padding=True,
                                               truncation=True,
-                                              use_cache=True)
+                                              use_cache=True,
+                                              #  手动处理数据，一定要统一padding side, transforers库不同的模型有不同的默认padding side
+                                              # 大坑，llama-3.2是left，llama-3.1是right
+                                              padding_side="left")
     tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
     tokenizer.add_special_tokens({'sep_token': DEFINE_SEP_TOKEN})
     model.pad_token_id = tokenizer.pad_token_id
@@ -122,41 +131,44 @@ def train():
     # # for debug sft, ignore
     # data_loader = DataLoader(
     #     train_datasets,                   # 数据集
-    #     batch_size=4,                     # 批次大小
+    #     batch_size=2,                     # 批次大小
     #     shuffle=True,                     # 是否打乱数据
     #     collate_fn=collator,              # 自定义数据整理函数
     # )
-    # loss_fn = torch.nn.CrossEntropyLoss()
-    # i = 0
-    # for batch in data_loader:
-    #     if is_main_process():
-    #         # print(batch)
-    #         # print( batch['input_ids'].shape)
-    #         # print( batch['attention_mask'].shape)
-    #         # print( batch['labels'].shape)
-    #         # print(batch['labels'])
-    #         # output = model(**batch)
-    #         print('-'*100)
+    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-100)
+    # with torch.no_grad():
+    #     i = 0
+    #     for batch in data_loader:
+    #         if is_main_process():
+    #             # print(batch)
+    #             # print( batch['input_ids'].shape)
+    #             # print( batch['attention_mask'].shape)
+    #             # print( batch['labels'].shape)
+    #             # print(batch['labels'])
+    #             # output = model(**batch)
+    #             print('-'*100)
 
-    #         # batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch cross entropy
+    #             # batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch cross entropy
 
-    #         model.to('cuda:0')
-    #         output = model(input_ids = batch['input_ids'].to('cuda:0'),
-    #                         attention_mask = batch['attention_mask'].to('cuda:0'),
-    #                         labels = batch['labels'].to('cuda:0')
-    #                         )
+    #             model.to('cuda:0')
+    #             output = model(input_ids = batch['input_ids'].to('cuda:0'),
+    #                             attention_mask = batch['attention_mask'].to('cuda:0'),
+    #                             labels = batch['labels'].to('cuda:0')
+    #                             )
 
-    #         print(output.logits.shape)
-    #         logits = output.logits
+    #             print(output.logits.shape)
+    #             logits = output.logits
 
-    #         batch['labels'] = torch.roll(batch['labels'],  shifts = -1) # 手动shift，使用torch cross entropy
-    #         loss = loss_fn(logits[0,:], batch['labels'].to('cuda:0')[0,:] )
-    #         print(loss)
-    #         print('model:', output.loss)
-    #         loss.backward()
-    #         # print(output)
-    #         i = i + 1
-    #     if i == 100:
+    #             v = logits.shape[2]
+
+    #             batch['labels'] = torch.roll(batch['input_ids'],  shifts = -1) # 手动shift，使用torch cross entropy
+    #             loss = loss_fn(logits.view(-1, v), batch['labels'].to('cuda:0').view(-1) )
+    #             print(loss)
+    #             print('model:', output.loss)
+    #             # loss.backward()
+    #             # print(output)
+    #             i = i + 1
+    #         # if i == 100:
     #         break
     # return
 
