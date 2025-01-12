@@ -24,14 +24,7 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map='auto'
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
-
-# tokenizer.eos_token = DEFINE_EOS_TOKEN
-# tokenizer.pad_token = tokenizer.eos_token
-# tokenizer.pad_token_id = tokenizer.eos_token_id
-# model.config.pad_token = DEFINE_EOS_TOKEN
-# model.config.pad_token_id = tokenizer.eos_token_id
-# model.pad_token_id = tokenizer.pad_token_id
-# model.pad_token = tokenizer.pad_token
+model.generation_config.pad_token_id = tokenizer.pad_token_id
 
 terminators = [
     tokenizer.eos_token_id,

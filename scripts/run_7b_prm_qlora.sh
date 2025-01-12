@@ -37,24 +37,16 @@ deepspeed ./ma-rlhf/sft_step.py \
 	--gradient_accumulation_steps=8 \
 	--learning_rate=2e-5
 
- merge SFT with lora
- 由于lm_head lora, 合并时间较长。
+#  merge SFT with lora
+#  由于lm_head lora, 合并时间较长。
  python ./ma-rlhf/merge_adapter.py \
  	--base_model_name=${model_pretrained_full_path} \
  	--model_name=${model_sft_step_lora_path} \
  	--merged_model_name=${model_sft_step_full_path}
 
+bash ./scripts/run_step_generation_examples.sh ${model_sft_step_lora_path} 2048
 
-# echo '-----------------------------step-sft model-------------------------------'
-
-bash ./scripts/run_step_generation_examples.sh ${model_sft_step_lora_path} 4096
-
-echo '----------------------------base model----------------------------------'
-
-bash ./scripts/run_step_generation_examples.sh ${base_model_path} 512
-
-
-# # # # stage: sft
+# # # # stage: prm
 prm_dataset_name='xiaodongguaAIGC/step_prm'
 # deepspeed ./ma-rlhf/sft_step.py \
 deepspeed ./ma-rlhf/process_reward_model.py \
@@ -70,11 +62,11 @@ deepspeed ./ma-rlhf/process_reward_model.py \
 	--gradient_accumulation_steps=8 \
 	--learning_rate=1e-5
 
- # merge SFT with lora
+ # merge prm with lora
  python ./ma-rlhf/merge_adapter.py \
  	--base_model_name=${model_sft_step_full_path} \
  	--model_name=${model_prm_lora_path} \
  	--merged_model_name=$model_prm_full_path}
 
-# # TODO: 1. Check PRM correctness, 2. PRM-search generate
-# # bash ./scripts/run_generation_examples.sh ${model_sft_full_path} 512
+echo '-----------------------------prm model-------------------------------'
+bash ./scripts/run_prm_examples.sh ${model_sft_step_full_path}  ${model_prm_lora_path} 2048

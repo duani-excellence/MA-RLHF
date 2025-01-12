@@ -172,6 +172,8 @@ class ScriptArguments:
 
     output_name: Optional[str] = field(default="", metadata={"help": "n steps to save the model"})
 
+    lora_path: Optional[str] = field(default="", metadata={"help": "lora path"})
+
     dataset_name: Optional[str] = field(
         default="", metadata={"help": "chinese medical english alpaca"}
     )
@@ -225,6 +227,8 @@ class ScriptArguments:
     use_qlora_double_quant: Optional[bool] = field(default=False, metadata={"help": "merge check point"})
 
     step_generate: Optional[bool] = field(default=False, metadata={"help": "step generation"})
+
+
 
 def format_prompt_answer(question, answer):
     '''for generation'''
