@@ -32,7 +32,7 @@ STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Requ
 PRM800K_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
 MATH_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. \n'''
 GSM8K_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
-PRM_INSTRUCTION = '''Scoring step-by-step reasoning.\n'''
+PRM_INSTRUCTION = '''Scoring step-by-step reasoning with "Positive" or "Negative". \n'''
 
 
 def is_main_process():

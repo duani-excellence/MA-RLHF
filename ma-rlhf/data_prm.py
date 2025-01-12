@@ -93,28 +93,26 @@ def process_prm_step(example,  tokenizer = None):
     for step, label in zip(steps, labels):
         response = step + DEFINE_SEP_TOKEN  # step的尾部加上sep token
         step_response_token_ids = tokenizer.encode(
-            response, add_special_tokens=False)
+            response,
+            add_special_tokens=False)
 
         response_token_ids.extend(step_response_token_ids)
         place_indexs.append(len(response_token_ids) + prompt_len)
         label_idx.append(label_map[label])
 
+    # if example['is_end']:
     response_token_ids.extend([tokenizer.eos_token_id])  # 完整结束后增加eos token
     response_token_ids = torch.tensor(response_token_ids)
 
     # 拼接 prompt + response
     input_ids = torch.cat((prompt_encode, response_token_ids), dim=0)
     attention_mask = torch.ones_like(input_ids)
-    # attention_mask[place_indexs] = False
 
     # 创建 label， 在sep token里才有回归的标签
     # 这里相当于一长串数据，可以一次性回归多个sep_token 对应的correctness的标签
     place_indexs = [idx for idx in place_indexs] # 同step sft
     prompt_label = torch.ones_like(input_ids) * -100
     prompt_label[place_indexs] = torch.tensor(label_idx, dtype=torch.long)
-
-    print(input_ids)
-    print(prompt_label)
 
     example['input_ids'] = input_ids
     example['attention_mask'] = attention_mask

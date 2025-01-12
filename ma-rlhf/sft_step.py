@@ -62,9 +62,8 @@ learning_rate = train_args.learning_rate
 def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
     print(dataset)
-
-    dataset['train'] = dataset['train'].filter(lambda x: x["is_step"] == True and x["is_end"] == True,
-                                            batched=False)
+    # dataset['train'] = dataset['train'].filter(lambda x: x["is_step"] == True and x["is_end"] == True,
+    #                                         batched=False)
 
 
     dataset = dataset['train'].map(process_sft_step,
@@ -88,7 +87,7 @@ def create_model_tokenizer(model_name):
     device_map = {"": Accelerator().local_process_index}
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        # quantization_config=bnb_config if is_peft else None,
+        quantization_config=bnb_config if is_peft else None,
         device_map=device_map,
         use_flash_attention_2=use_flash_attention_2,
         trust_remote_code=True,
@@ -118,7 +117,7 @@ def train():
     model, tokenizer = create_model_tokenizer(model_name)
     train_datasets, _ = create_sft_step_datasets(dataset_name, tokenizer, seq_length=seq_length)
     collator = DataCollatorForSFT(tokenizer=tokenizer)
-    peft_config = create_peft_lm_head(is_peft)
+    peft_config = create_peft_lm_head(True)
 
     '''
     https://github.com/huggingface/peft/issues/137

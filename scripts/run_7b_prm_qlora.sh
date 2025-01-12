@@ -11,8 +11,8 @@ output_path='./output'
 
 # model_pretrained_full_path=${base_model_path}
 model_pretrained_full_path=${base_model_path}
-model_sft_step_lora_path=${output_path}'/step_lora'
-model_sft_step_full_path=${output_path}'/step_full'
+model_sft_step_lora_path=${output_path}'/step_sft_lora'
+model_sft_step_full_path=${output_path}'/step_sft_full'
 model_prm_lora_path=${output_path}'/prm_lora'
 model_prm_full_path=${output_path}'/prm_full'
 
@@ -33,48 +33,48 @@ deepspeed ./ma-rlhf/sft_step.py \
 	--batch_size=4 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=3 \
-	--gradient_accumulation_steps=4 \
+	--num_train_epochs=2 \
+	--gradient_accumulation_steps=8 \
 	--learning_rate=2e-5
 
-# #  merge SFT with lora
-# #  由于lm_head lora, 合并时间较长。
-#  python ./ma-rlhf/merge_adapter.py \
-#  	--base_model_name=${model_pretrained_full_path} \
-#  	--model_name=${model_sft_step_lora_path} \
-#  	--merged_model_name=${model_sft_step_full_path}
+ merge SFT with lora
+ 由于lm_head lora, 合并时间较长。
+ python ./ma-rlhf/merge_adapter.py \
+ 	--base_model_name=${model_pretrained_full_path} \
+ 	--model_name=${model_sft_step_lora_path} \
+ 	--merged_model_name=${model_sft_step_full_path}
 
 
 # echo '-----------------------------step-sft model-------------------------------'
 
-bash ./scripts/run_step_generation_examples.sh ${model_sft_step_lora_path} 1024
+bash ./scripts/run_step_generation_examples.sh ${model_sft_step_lora_path} 4096
 
-# echo '----------------------------base model----------------------------------'
+echo '----------------------------base model----------------------------------'
 
-# bash ./scripts/run_step_generation_examples.sh ${base_model_path} 512
+bash ./scripts/run_step_generation_examples.sh ${base_model_path} 512
 
 
 # # # # stage: sft
-# prm_dataset_name='qgallouedec/prm800k'
-# # deepspeed ./ma-rlhf/sft_step.py \
-# deepspeed ./ma-rlhf/process_reward_model.py \
-# 	--dataset_name=${prm_dataset_name} \
-# 	--model_name=${model_sft_step_full_path} \
-# 	--seq_length=256 \
-# 	--output_name=${model_prm_lora_path} \
-# 	--use_QLora=True \
-# 	--batch_size=32 \
-# 	--use_flash_attention_2=True \
-# 	--deepspeed_config_name=${deepspeed_config_name} \
-# 	--num_train_epochs=2 \
-# 	--gradient_accumulation_steps=4 \
-# 	--learning_rate=1e-5
+prm_dataset_name='xiaodongguaAIGC/step_prm'
+# deepspeed ./ma-rlhf/sft_step.py \
+deepspeed ./ma-rlhf/process_reward_model.py \
+	--dataset_name=${prm_dataset_name} \
+	--model_name=${model_sft_step_full_path} \
+	--seq_length=1024 \
+	--output_name=${model_prm_lora_path} \
+	--use_QLora=False \
+	--batch_size=4 \
+	--use_flash_attention_2=True \
+	--deepspeed_config_name=${deepspeed_config_name} \
+	--num_train_epochs=2 \
+	--gradient_accumulation_steps=8 \
+	--learning_rate=1e-5
 
-#  # merge SFT with lora
-#  python ./ma-rlhf/merge_adapter.py \
-#  	--base_model_name=${model_sft_full_path} \
-#  	--model_name=${model_prm_lora_path} \
-#  	--merged_model_name=$model_prm_full_path}
+ # merge SFT with lora
+ python ./ma-rlhf/merge_adapter.py \
+ 	--base_model_name=${model_sft_step_full_path} \
+ 	--model_name=${model_prm_lora_path} \
+ 	--merged_model_name=$model_prm_full_path}
 
 # # TODO: 1. Check PRM correctness, 2. PRM-search generate
 # # bash ./scripts/run_generation_examples.sh ${model_sft_full_path} 512
