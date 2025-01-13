@@ -73,8 +73,7 @@ def process_sft_step(example, tokenizer = None):
 # negative_id = prm_tokenizer('Negative', add_special_tokens=False)['input_ids']
 # negative_token = 'Negative'
 # print(negative_id) # 39589
-# label_map = {0: 39589, 1: 36590} # 这个才是正确的
-label_map = {0: 36590, 1: 39589}
+label_map = {0: 39589, 1: 36590} # 这个才是正确的
 
 
 def process_prm_step(example,  tokenizer = None):

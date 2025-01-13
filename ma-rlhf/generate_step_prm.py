@@ -82,7 +82,7 @@ idx = torch.where(inputs['input_ids'][0,:] == tokenizer.convert_tokens_to_ids(DE
 positive_token_id = tokenizer.convert_tokens_to_ids(DEFINE_POSITIVE_TOKEN)
 negative_token_id = tokenizer.convert_tokens_to_ids(DEFINE_NEGATIVE_TOKEN)
 logits_idx = logits[0, idx]
-logits_idx_token = logits_idx[:, [positive_token_id, negative_token_id]] # positive token 对应 False, negative token 对应 True
+logits_idx_token = logits_idx[:, [negative_token_id, positive_token_id]] # positive token 对应 False, negative token 对应 True
 
 
 sep_prob = torch.nn.functional.softmax(logits_idx_token, dim=1)
