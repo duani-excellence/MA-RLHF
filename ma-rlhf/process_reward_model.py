@@ -5,6 +5,7 @@ from utils import (
     create_peft,
     DEFINE_SEP_TOKEN,
     create_peft_lm_head,
+    create_peft_prm_lm_head,
 )
 
 from data_prm import (
@@ -60,6 +61,7 @@ learning_rate = train_args.learning_rate
 
 def create_prm_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
+    # dataset = dataset.filter(lambda x: x['type'] == 'PRM800K' and  x['labels'][-1] == False, batched=False)
     print(dataset)
     dataset = dataset['train'].map(process_prm_step,
                            num_proc=24,
@@ -67,9 +69,11 @@ def create_prm_step_datasets(dataset_name, tokenizer, seq_length=1024):
                                'prompt', 'completions', 'labels', 'is_step', 'is_end', 'type'],
                             fn_kwargs={ "tokenizer": tokenizer},
                             batched = False,
+                            load_from_cache_file=False,
                            )
 
     dataset = dataset.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
+    print(dataset)
     return dataset, None
 
 def create_model_tokenizer(model_name):
@@ -108,7 +112,7 @@ def train():
     model, tokenizer = create_model_tokenizer(model_name)
     train_datasets, _ = create_prm_step_datasets(dataset_name, tokenizer, seq_length)
     collator = DataCollatorForSFT(tokenizer=tokenizer)
-    peft_config = create_peft_lm_head(True)
+    peft_config = create_peft_prm_lm_head(True)
     model.enable_input_require_grads()
     model = get_peft_model(model, peft_config)
     model.print_trainable_parameters()

@@ -32,7 +32,8 @@ STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Requ
 PRM800K_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
 MATH_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. \n'''
 GSM8K_STEP_INSTRUCTION = '''Solve this math problem using step-by-step reasoning. Require that the output of each step ends with the "<|reserved_special_token_1|>" token.\n'''
-PRM_INSTRUCTION = '''Scoring step-by-step reasoning with "Positive" or "Negative". \n'''
+# PRM_INSTRUCTION = '''Scoring step-by-step reasoning with predict "Positive" or "Negative" .\n'''
+PRM_INSTRUCTION = '''Score each step under the 'Positive' and 'Negative' labels based on its correctness.\n'''
 
 
 def is_main_process():
@@ -94,6 +95,23 @@ def create_peft_lm_head(peft_flag: bool = False) -> LoraConfig:
         )
         return peft_config
 
+def create_peft_prm_lm_head(peft_flag: bool = False) -> LoraConfig:
+    '''
+    当新加入step token时，如果不对LM_head 加lora, 会导致难预测出step token
+    '''
+    if peft_flag == False:
+        return None
+    else:
+        # default peft lora is Q_Lora K_Lora
+        peft_config = LoraConfig(
+            r=64,
+            lora_alpha=8,
+            bias="none",
+            lora_dropout=0,
+            task_type="CAUSAL_LM",
+            target_modules = ['q_proj', 'k_proj',  'lm_head'],
+        )
+        return peft_config
 
 def create_peft_reward_model(peft_flag: bool = False) -> LoraConfig:
     if peft_flag == False:

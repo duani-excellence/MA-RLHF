@@ -20,11 +20,10 @@ lora_path = train_args.lora_path
 device = 'cuda:0'
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    # use_flash_attention_2=True,
+    use_flash_attention_2=True,
     trust_remote_code=True,
-    # load_in_4bit=True,
     torch_dtype=torch.bfloat16,
-    device_map='auto'
+    device_map=device
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True,)
 model.generation_config.pad_token_id = tokenizer.pad_token_id
@@ -63,7 +62,6 @@ response = output[:, prompt_len:]
 
 
 # prm score
-
 print('-'*100)
 print('stage prm score')
 print('-'*100)
@@ -81,9 +79,8 @@ idx = torch.where(inputs['input_ids'][0,:] == tokenizer.convert_tokens_to_ids(DE
 
 positive_token_id = tokenizer.convert_tokens_to_ids(DEFINE_POSITIVE_TOKEN)
 negative_token_id = tokenizer.convert_tokens_to_ids(DEFINE_NEGATIVE_TOKEN)
-logits_idx = logits[0, idx]
-logits_idx_token = logits_idx[:, [negative_token_id, positive_token_id]] # positive token 对应 False, negative token 对应 True
-
+logits_idx = logits[0, idx, :]
+logits_idx_token = logits_idx[:, [negative_token_id, positive_token_id]]
 
 sep_prob = torch.nn.functional.softmax(logits_idx_token, dim=1)
 probs, preds = torch.max(sep_prob, dim=1)

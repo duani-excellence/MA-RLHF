@@ -52,21 +52,15 @@ prm_dataset_name='xiaodongguaAIGC/step_prm'
 deepspeed ./ma-rlhf/process_reward_model.py \
 	--dataset_name=${prm_dataset_name} \
 	--model_name=${model_sft_step_full_path} \
-	--seq_length=1024 \
+	--seq_length=512 \
 	--output_name=${model_prm_lora_path} \
-	--use_QLora=False \
+	--use_QLora=True \
 	--batch_size=4 \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
-	--num_train_epochs=2 \
+	--num_train_epochs=1 \
 	--gradient_accumulation_steps=8 \
-	--learning_rate=1e-5
+	--learning_rate=2e-5
 
- # merge prm with lora
- python ./ma-rlhf/merge_adapter.py \
- 	--base_model_name=${model_sft_step_full_path} \
- 	--model_name=${model_prm_lora_path} \
- 	--merged_model_name=$model_prm_full_path}
-
-echo '-----------------------------prm model-------------------------------'
+echo '----------------------------- PRM model, memory efficient -------------------------------'
 bash ./scripts/run_prm_examples.sh ${model_sft_step_full_path}  ${model_prm_lora_path} 2048

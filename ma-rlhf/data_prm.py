@@ -1,3 +1,4 @@
+from turtle import right
 from typing import Dict, List, Optional, Union, Any
 import torch
 import transformers
@@ -73,9 +74,7 @@ def process_sft_step(example, tokenizer = None):
 # negative_id = prm_tokenizer('Negative', add_special_tokens=False)['input_ids']
 # negative_token = 'Negative'
 # print(negative_id) # 39589
-label_map = {0: 39589, 1: 36590} # 这个才是正确的
-
-
+label_map = {0: 39589, 1: 36590}
 def process_prm_step(example,  tokenizer = None):
     question = example['prompt']
     steps = example['completions']
@@ -98,7 +97,7 @@ def process_prm_step(example,  tokenizer = None):
 
         response_token_ids.extend(step_response_token_ids)
         place_indexs.append(len(response_token_ids) + prompt_len)
-        label_idx.append(label_map[label]) # 训反了, False 对应到 positive token, True 对应到 negative token
+        label_idx.append(label_map[label])
 
     # if example['is_end']:
     response_token_ids.extend([tokenizer.eos_token_id])  # 完整结束后增加eos token
