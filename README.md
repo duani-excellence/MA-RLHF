@@ -8,10 +8,12 @@
 
 Feature：
 
+- 🔥 [2025.01.15]: **O1 traininig** support `step-wise SFT`  and `Process Reward Model`
+
 - System : HuggingFace* +Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB
-- 🔥 RLHF-PPO: `Notebook` with Pytorch Implementation, NOT other RL-LIB,
-- 💻 70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **<2-days**
+- 💻  RLHF-PPO: `Notebook` with Pytorch Implementation, NOT other RL-LIB,
+- 💻  70B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA800 (80G) in **<2-days**
 - 💻   8B RLHF： complete `SFT`/`DPO`/`PPO` pipeline in 8xA3090(24G) in **<1-days**
 - 🦙 **[Llama-3-8B](https://huggingface.co/xiaodongguaAIGC/xdg-llama-3-8B) : This project release finally aligned model result**
 
@@ -30,7 +32,7 @@ Feature：
 
 Thanks [@Leosword](https://jqmraiicku6.feishu.cn/wiki/AVilwV6hoiHLRMkLL01ckE9gnzh)
 
-✅ run 30model in 8xA100 80G, cpu-offload, each gpu memory is 20G+/80G
+✅ run 30B model in 8xA100 80G, cpu-offload, each gpu memory is 20G+/80G
 
 ## Installation & Quick Start
 
@@ -115,6 +117,49 @@ bash ./scripts/run_7B_ppo.sh
 - base_model_path='meta-llama/Meta-Llama-3-8B'
 + base_model_path='meta-llama/Meta-Llama-3-70B'
 ```
+
+### 🧮 O1 Training [Updating...]
+
+#### Dataset Collect
+
+collect `MATH`, `GSM8K`, `PRM800K`, `ProcessBench` dataset, data-mix notebook, you could run in `colab` 
+
+```
+./data/o1_math_dataset_process.ipynb 
+```
+
+Direct Use:
+
+1. [xiaodongguaAIGC/step_sft](https://huggingface.co/datasets/xiaodongguaAIGC/step_sft)
+2. [xiaodongguaAIGC/step_prm](https://huggingface.co/datasets/xiaodongguaAIGC/step_prm)
+
+#### Training Script
+
+Based `Llama-3.1-8B`,  training as follow
+
+```
+bash ./scripts/run_7b_prm_qlora.sh
+```
+
+The Result Model push to hugging face:  [xiaodongguaAIGC/xdg-math-step](https://huggingface.co/xiaodongguaAIGC/xdg-math-step), xiaodongguaAIGC/xdg-math-prm-lora` 
+
+For memory-efficiency, Stage1, we decoding soloution step-by-step with special token: `SEP_TOKEN`, Stage2, we load LoRA and attach to step-sft model, and score Stage1 result in `SEP_TOKEN`
+
+⚠️PRM-Model 目前不准。瓶颈在数据。 训练建议4090x4，开stage3，bs=4，len=1024， 完整训练耗时<1day
+
+#### Test
+
+🔥 [Colab Test](https://colab.research.google.com/drive/17-eEER7sV7xJ66pKiDIB9gEuS8phXeX3?usp=sharing)
+
+#### TODO
+
+- [ ] PRM training config
+- [ ] PRM-Search Workflow
+- [ ] math evaluation
+- [ ] prm evaluation
+- [ ] math vllm rejection sampling
+- [ ] step-wise label Annotation
+- [ ] MCTS/RL-PPO
 
 ### Optional
 

@@ -72,6 +72,7 @@ inputs['input_ids'] = torch.cat([inputs['input_ids'].to(device), response.to(dev
 
 model.to(device)
 model = PeftModel.from_pretrained(model, lora_path)
+
 with torch.no_grad():
     output = model(inputs['input_ids'].to(device))
 logits = output.logits # shape: (batch_size, seq_len, vocab_size)
