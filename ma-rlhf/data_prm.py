@@ -26,7 +26,8 @@ def process_sft_step(example, tokenizer = None):
 
     instruction_map = {'PRM800K': PRM800K_STEP_INSTRUCTION,
                         'MATH': MATH_STEP_INSTRUCTION,
-                        'GSM8K': GSM8K_STEP_INSTRUCTION}
+                        'GSM8K': GSM8K_STEP_INSTRUCTION,
+                        'PROCESS_BENCH': GSM8K_STEP_INSTRUCTION}
 
     # 分词prompt
     current_instruction = instruction_map[example['type']]
