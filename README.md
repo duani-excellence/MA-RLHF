@@ -52,6 +52,9 @@ Create Dev Environment
 conda create -n llm python=3.11
 conda activate llm
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+or
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+
 pip install -r requirements.txt
 pip install flash-attn # option
 ```
@@ -122,10 +125,10 @@ bash ./scripts/run_7B_ppo.sh
 
 #### Dataset Collect
 
-collect `MATH`, `GSM8K`, `PRM800K`, `ProcessBench` dataset, data-mix notebook, you could run in `colab` 
+collect `MATH`, `GSM8K`, `PRM800K`, `ProcessBench` dataset, data-mix notebook, you could run in `colab`
 
 ```
-./data/o1_math_dataset_process.ipynb 
+./data/o1_math_dataset_process.ipynb
 ```
 
 Direct Use:
@@ -141,7 +144,7 @@ Based `Llama-3.1-8B`,  training as follow
 bash ./scripts/run_7b_prm_qlora.sh
 ```
 
-The Result Model push to hugging face:  [xiaodongguaAIGC/xdg-math-step](https://huggingface.co/xiaodongguaAIGC/xdg-math-step), xiaodongguaAIGC/xdg-math-prm-lora` 
+The Result Model push to hugging face:  [xiaodongguaAIGC/xdg-math-step](https://huggingface.co/xiaodongguaAIGC/xdg-math-step), xiaodongguaAIGC/xdg-math-prm-lora`
 
 For memory-efficiency, Stage1, we decoding soloution step-by-step with special token: `SEP_TOKEN`, Stage2, we load LoRA and attach to step-sft model, and score Stage1 result in `SEP_TOKEN`
 
