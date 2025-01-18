@@ -62,9 +62,6 @@ learning_rate = train_args.learning_rate
 def create_sft_step_datasets(dataset_name, tokenizer, seq_length=1024):
     dataset = load_dataset(dataset_name)
     print(dataset)
-    # dataset['train'] = dataset['train'].filter(lambda x: x["is_step"] == True and x["is_end"] == True,
-    #                                         batched=False)
-
 
     dataset = dataset['train'].map(process_sft_step,
                            num_proc=24,
@@ -108,7 +105,6 @@ def create_model_tokenizer(model_name):
     model.pad_token = tokenizer.pad_token
     model.sep_token_id = tokenizer.sep_token_id
     model.sep_token = tokenizer.sep_token
-
     return model, tokenizer
 
 

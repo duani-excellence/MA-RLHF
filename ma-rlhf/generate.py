@@ -43,9 +43,8 @@ if step_generate:
                             temperature=0.6,
                             top_p = 0.95,
                             eos_token_id=terminators)
-    print(output)
     output = tokenizer.decode(output[0], skip_special_tokens=False) # set `skip_special_tokens=False` to debug
-    # print(output)
+    print(output)
     output = output.replace(DEFINE_SEP_TOKEN, " [SEP]\n")
     print(output)
 else:
