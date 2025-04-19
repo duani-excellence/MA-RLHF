@@ -1,7 +1,6 @@
-from responses import target
 import torch
 from datasets import load_dataset, load_from_disk
-from trl import SFTTrainer
+from trl import SFTTrainer, SFTConfig
 from accelerate import Accelerator
 from peft import LoraConfig, get_peft_model
 from utils import ScriptArguments
@@ -46,8 +45,7 @@ def create_model_tokenizer(name):
         model_name,
         quantization_config=bnb_config,
         device_map=device_map,
-        # torch_dtype=torch.bfloat16,
-        use_flash_attention_2=True, # gpt 2 not support flash attention2
+        use_flash_attention_2=True,
         trust_remote_code=True,
     )
 
@@ -62,13 +60,11 @@ def create_peft(peft_flag):
     if peft_flag == False:
         return None
     else:
-        # default peft lora is Q_Lora K_Lora
         peft_config = LoraConfig(
             r=32,
             lora_alpha=8,
             bias="none",
             task_type="CAUSAL_LM",
-            # target_modules=["W_pack"], # for baichuan2
         )
         return peft_config
 
@@ -89,7 +85,7 @@ def train():
     # peft
     peft_config = create_peft(is_peft)
 
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         output_dir=output_name,
         push_to_hub=False,
         # save_strategy='epoch',
@@ -104,21 +100,20 @@ def train():
         gradient_accumulation_steps=1,
         deepspeed=deepspeed_config_name,
         report_to='wandb',
-        lr_scheduler_type='cosine'
-        # max_steps=10,
+        lr_scheduler_type='cosine',
+        packing=True,
+        max_steps=10,
+        dataset_num_proc=16,
     )
 
     trainer = SFTTrainer(
         model,
         args=training_args,
         train_dataset=train_dataset,
-        dataset_text_field="text",
-        max_seq_length=seq_length,
         peft_config=peft_config,
-        packing=True,
-        tokenizer=tokenizer,
+        # packing=True,
+        # tokenizer=tokenizer,
         formatting_func=formatting_func,
-        dataset_num_proc=16,
     )
 
     trainer.train()

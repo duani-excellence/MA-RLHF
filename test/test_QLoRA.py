@@ -33,7 +33,9 @@ dataset = dataset.map(process)
 from transformers import BitsAndBytesConfig
 
 bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+    load_in_4bit=True, 
+    bnb_4bit_quant_type="nf4", 
+    bnb_4bit_compute_dtype=torch.bfloat16
 )
 
 device_map = {"": Accelerator().local_process_index}
@@ -43,15 +45,9 @@ model = AutoModelForCausalLM.from_pretrained(
     'xiaodongguaAIGC/llama-3-debug',  # 'meta-llama/Llama-2-7b-hf',
     quantization_config=bnb_config,
     device_map=device_map,
-    torch_dtype=torch.bfloat16,
-    use_flash_attention_2=True
-    # trust_remote_code=script_args.trust_remote_code,
-    # use_auth_token=script_args.use_auth_token,
+    attn_implementation="flash_attention_2",
 )
 
-# print("开始暂停")
-# time.sleep(60)
-# print("暂停结束")
 
 training_args = TrainingArguments(
     output_dir='./output/test_QLoRA',
@@ -67,8 +63,6 @@ trainer = SFTTrainer(
     model,
     args=training_args,
     train_dataset=dataset,
-    dataset_text_field="text",
-    max_seq_length=512,
     peft_config=peft_config,
 )
 

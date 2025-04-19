@@ -1,11 +1,21 @@
-from codecs import BOM_BE
+'''
+this code required trl>0.11.0 and NOT SUPPORT multi-adapter LoRA training
+'''
+
 import re
 import torch
 import os
 from datasets import load_dataset, load_from_disk
 from trl import AutoModelForCausalLMWithValueHead, PPOTrainer, PPOConfig
 from trl.core import LengthSampler
-from transformers import AutoTokenizer, BitsAndBytesConfig, HfArgumentParser
+from transformers import  (
+    AutoTokenizer, 
+    BitsAndBytesConfig, 
+    HfArgumentParser, 
+    GenerationConfig, 
+    AutoModelForSequenceClassification,
+    AutoModelForCausalLM,
+)
 from accelerate import Accelerator
 from utils import (
     create_model_tokenizer,
@@ -52,105 +62,14 @@ def create_model_tokenizer(name, rm_model_name, peft_config):
     device_map = {"": Accelerator().local_process_index}
     print('device map: ', device_map)
 
-    model = AutoModelForCausalLMWithValueHead.from_pretrained(
-        name,
-        quantization_config=bnb_config,
-        peft_config=peft_config,
-        reward_adapter=rm_model_name,
-        device_map=device_map,  # 70b use 'auto' would auto shard parameter
-        use_flash_attention_2=is_use_flash_attention2,
-        trust_remote_code=True,
-        # low_cpu_mem_usage=True,
-    )
-
     tokenizer = AutoTokenizer.from_pretrained(
         model_name,
         # use_fast=True,
         trust_remote_code=True,
     )
     tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
-    model.pad_token_id = tokenizer.pad_token_id
-    model.pad_token = tokenizer.pad_token
-    model.pad_token_id = tokenizer.pad_token_id
-    # model.config.pad_token_id = model.config.eos_token_id
 
-    return model, tokenizer
-
-
-def create_dataset(dataset_name, tokenizer):
-
-    datasets = load_dataset(dataset_name, split='train')
-
-    def preprocess_function(examples):
-        new_examples = {
-            "query": [],
-            "input_ids": [],
-        }
-        for question in examples["prompt"]:
-            query = format_prompt(question)
-            tokenized_question = tokenizer(query, return_tensors='pt')
-            new_examples["query"].append(query)
-            new_examples["input_ids"].append(tokenized_question["input_ids"][0])
-        return new_examples
-
-    def preprocess_function_hhrlhf(examples):
-        new_examples = {
-            "query": [],
-            "input_ids": [],
-        }
-        for prompt_chosen in examples["chosen"]:
-
-            # format hh-rlhf dataset for PPO
-            prompt_chosen = re.sub(r'\n\nHuman:', '\n###Question:', prompt_chosen)
-            prompt_chosen = re.sub(r'\n\nAssistant:', '\n###Answer:', prompt_chosen)
-            prompt_chosen = prompt_chosen.rsplit('\n###Answer:',1)[0]
-            prompt_chosen = prompt_chosen[1:] # skip first \n
-            query = prompt_chosen + '\n###Answer:'
-
-            # add system prompt
-            query = f'###System: {SYSTEM_PROMPT}\n{query}'
-
-            # TODO:truncation Answer Process
-            tokenized_question = tokenizer(query, return_tensors='pt')
-            new_examples["query"].append(query)
-            new_examples["input_ids"].append(tokenized_question["input_ids"][0])
-        return new_examples
-
-    func = None
-    if 'hh-rlhf' in dataset_name: # Anthropic/hh-rlhf
-        func = preprocess_function_hhrlhf
-    elif 'SafeRLHF' in dataset_name: # PKU-Alignment/PKU-SafeRLHF-10K
-        func = preprocess_function
-
-    datasets = datasets.map(
-        func,
-        batched=True,
-        num_proc=24,
-        remove_columns=datasets.column_names,
-    )
-
-    datasets = datasets.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
-    datasets.set_format(type="torch")
-    return datasets
-
-
-def collator(examples):
-    batch = {'query': [], 'input_ids': []}
-    for example in examples:
-        batch['query'].append(example['query'])
-        batch['input_ids'].append(torch.tensor(example['input_ids'], dtype=torch.long))
-    return batch
-
-def train():
-    peft_config = create_peft(is_peft)
-    model, tokenizer = create_model_tokenizer(
-        model_name, rm_model_name, peft_config
-    )  # model is sequence classification
-
-    dataset = create_dataset(dataset_name, tokenizer)
-    print(dataset)
-
-    # generation config
+     # generation config
     generation_kwargs = {
         "min_length": -1,
         "max_new_tokens": output_max_length,
@@ -162,78 +81,98 @@ def train():
         "forced_eos_token_id": tokenizer.eos_token_id, # class ForcedEOSTokenLogitsProcessor(LogitsProcessor) from transformers
         # "forced_eos_token_id": True,
     }
-    output_length_sampler = LengthSampler(128, output_max_length)
+
+    value_model = AutoModelForSequenceClassification.from_pretrained(
+        rm_model_name, trust_remote_code=True, num_labels=1
+    )
+    reward_model = AutoModelForSequenceClassification.from_pretrained(
+        rm_model_name, trust_remote_code=True, num_labels=1
+    )
+    policy_model = AutoModelForCausalLM.from_pretrained(
+        name, trust_remote_code=True
+    )
+
+    # peft_config = get_peft_config(model_args)
+    if peft_config is None:
+        ref_model = AutoModelForCausalLM.from_pretrained(
+            name, trust_remote_code=True
+        )
+    else:
+        ref_model = None
+
+    
+
+    return policy_model, value_model, reward_model, ref_model, tokenizer
+
+
+def create_dataset(dataset_name, tokenizer):
+
+    datasets = load_dataset(dataset_name, split='train')
+
+    def preprocess_function(examples):
+        outputs = tokenizer(
+            examples['prompt'],
+            padding=False,
+        )
+        return {"input_ids": outputs["input_ids"]}
+
+    func = preprocess_function
+
+    datasets = datasets.map(
+        func,
+        batched=True,
+        num_proc=24,
+        remove_columns=datasets.column_names,
+    )
+
+    datasets = datasets.filter(lambda x: len(x["input_ids"]) < seq_length, batched=False)
+    return datasets
+
+
+def train():
+    peft_config = create_peft(is_peft)
+    policy_model, value_model, reward_model, ref_model, tokenizer = create_model_tokenizer(
+        model_name, rm_model_name, peft_config
+    )  # model is sequence classification
+
+    dataset = create_dataset(dataset_name, tokenizer)
+    print(dataset)
+
+    # output_length_sampler = LengthSampler(128, output_max_length)
 
     config = PPOConfig(
-        log_with='wandb',
         learning_rate=1e-5,
         batch_size=batch_size,
         mini_batch_size=mini_batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
-        optimize_cuda_cache=True,
-        early_stopping=True,
-        target_kl=0.1,
-        ppo_epochs=ppo_epochs,
+        num_ppo_epochs=ppo_epochs,
         seed=0,
-        init_kl_coef=0.2,
-        adap_kl_ctrl=True,
         max_grad_norm=1.0,  # fix generate nan
+        model_adapter_name=model_name,
+        ref_adapter_name=model_name,
+        reward_model_path=rm_model_name,
     )
 
     trainer = PPOTrainer(
         config,
-        model,
-        ref_model=None,  # share parameters
-        tokenizer=tokenizer,
-        dataset=dataset,
-        data_collator=collator,
+        model=policy_model,
+        ref_model=ref_model,  # share parameters
+        value_model=value_model,
+        reward_model=reward_model,
+        train_dataset=dataset,
+        eval_dataset=dataset,
+        processing_class=tokenizer,
     )
 
-    reward_baseline = 0.0
-    save_freq = 50
+    trainer.train()
 
-    # for epoch, batch in enumerate(trainer.dataloader):
-    for epoch, batch in enumerate(trainer.dataloader):
-        start_time = time.time()
 
-        if epoch >= config.total_ppo_epochs:
-            break
-
-        question_tensors = batch["input_ids"]
-        response_tensors = trainer.generate(
-            question_tensors,
-            return_prompt=False,
-            # length_sampler=output_length_sampler,
-            **generation_kwargs,
-        )
-        batch["response"] = tokenizer.batch_decode(response_tensors, skip_special_tokens=True)
-
-        texts = [q + r for q, r in zip(batch["query"], batch["response"])]
-        rm_model = trainer.accelerator.unwrap_model(trainer.model)
-        raw_rewards = []
-        for text in texts:
-            inputs = tokenizer(text, return_tensors='pt').to(trainer.accelerator.device)
-            score = rm_model.compute_reward_score(**inputs)[0,-1,0] - reward_baseline
-            raw_rewards.append(score)
-        rewards = raw_rewards
-
-        ## PPO Step
-        stats = trainer.step(question_tensors, response_tensors, rewards)
-        trainer.log_stats(stats, batch, rewards)
-
-        if is_main_process():
-            for text, reward in zip(texts, rewards):
-                print('-----------------------------------')
-                print(text)
-                print(reward.item())
-                print('-----------------------------------')
-            print(f"step:{epoch}/all:{len(trainer.dataloader)},loss:{stats['ppo/loss/total']},mean_scores:{stats['ppo/mean_scores']}" )
-
-        if save_freq and epoch and epoch % save_freq == 0:
-            trainer.save_pretrained(f'{output_name}_{epoch}')
-            print(f'{output_name}_{epoch}')
-            # break
-    trainer.save_pretrained(output_name)
+    # 训练时把trl `ppo_trainer.py` 以下函数修改，方可保存
+    # def save_model(self, output_dir: Optional[str] = None, _internal_call: bool = False):
+    #     backup_model = self.model
+    #     # self.model = self.model.policy # 删除这行
+    #     self.model = self.model.module.policy  # 修改成这行
+    trainer.save_model(output_name)
 
 if __name__ == "__main__":
     train()

@@ -265,8 +265,10 @@ def formatting_finetune_func(example):
 
 def formatting_alpaca_func_bached(example):
     output_text = []
-    for i, instruction in enumerate(example["instruction"]):
-        text = f"###System: {SYSTEM_PROMPT}\n###Question: {instruction} {example['input'][i]}\n###Answer: {example['output'][i]} {DEFINE_EOS_TOKEN}"
+    for instruction, item_input, item_output in zip(example["instruction"], 
+                                        example['input'], 
+                                        example['output'] ):
+        text = f"###System: {SYSTEM_PROMPT}\n###Question: {instruction} {item_input}\n###Answer: {item_output} {DEFINE_EOS_TOKEN}"
         output_text.append(text)
     return output_text
 

@@ -138,13 +138,9 @@ def train():
         model,
         args=training_args,
         train_dataset=train_datasets,
-        # max_seq_length=seq_length,
         peft_config=peft_config,
-        # packing=False,
-        tokenizer=tokenizer,
         data_collator=collator,
         formatting_func=format_fun,
-        # dataset_num_proc=24,
     )
     trainer.train()
     trainer.save_model(output_name)

@@ -1,16 +1,11 @@
 # 完整运行
 
 base_model_path='meta-llama/Meta-Llama-3-8B'
+# base_model_path='xiaodongguaAIGC/llama-3-debug'
 deepspeed_config_name=./config/ds.json
 output_path='./output'
 
-model_pretrained_lora_path=${output_path}'/pretrained_lora'
-model_pretrained_full_path=${output_path}'/pretrained_full'
-model_sft_lora_path=${output_path}'/sft_lora'
 model_sft_full_path=${output_path}'/sft_full'
-model_reward_model_lora_path=${output_path}'/reward_model_lora'
-model_ppo_lora_path=${output_path}'/ppo_lora'
-model_ppo_full_path=${output_path}'/ppo_full'
 model_dpo_lora_path=${output_path}'/dpo_lora'
 model_dpo_full_path=${output_path}'/dpo_full'
 

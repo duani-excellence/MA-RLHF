@@ -189,7 +189,6 @@ def train():
 
     training_args = DPOConfig(
         output_dir=output_name,
-        # push_to_hub=False,
         save_strategy='epoch',
         logging_steps=1,
         num_train_epochs=num_train_epochs,
@@ -203,26 +202,24 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        # max_steps=5,
+        max_steps=100,
         # loss_type: Literal[
         #     "sigmoid", "hinge", "ipo", "kto_pair", "bco_pair", "sppo_hard", "nca_pair", "robust"
         # ] = "sigmoid"
-        loss_type='sigmoid',
+        loss_type='sigmoid', # standard dpo
         dataset_num_proc=64,
+        max_completion_length=output_max_length,
+        max_prompt_length= output_max_length,
+        max_length=seq_length,
         )
 
     trainer = DPOTrainer(
         model,
         None,
         args=training_args,
-        beta=beta,
         train_dataset=train_datasets,
-        # eval_dataset=test_datasets,
-        tokenizer=tokenizer,
         peft_config=peft_config,
-        max_prompt_length= output_max_length,
-        max_length=seq_length,
-        max_target_length=output_max_length,
+        processing_class=tokenizer,
     )
 
     trainer.train()

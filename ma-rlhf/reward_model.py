@@ -63,7 +63,9 @@ def create_model_tokenizer(name):
         model_name,
         quantization_config=bnb_config,
         device_map=device_map, # 70b use auto
-        num_labels=1
+        num_labels=1,
+        use_cache=False,
+        trust_remote_code=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
@@ -71,6 +73,8 @@ def create_model_tokenizer(name):
     tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
     model.pad_token_id = tokenizer.pad_token_id
     model.pad_token = tokenizer.pad_token
+    model.config.pad_token_id = tokenizer.pad_token_id
+    model.config.pad_token = tokenizer.pad_token
 
     return model, tokenizer
 
@@ -276,17 +280,13 @@ def train():
         lr_scheduler_type='cosine',
         # evaluation_strategy="steps",
         # eval_steps=100,
-        evaluation_strategy='no',
-        # max_steps=10,
     )
 
     trainer = RewardTrainer(
         model,
         args=reward_config,
         train_dataset=train_datasets,
-        # eval_dataset=test_datasets,
-        # compute_metrics=compute_metrics,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         peft_config=peft_config,
     )
 

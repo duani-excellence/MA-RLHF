@@ -6,9 +6,13 @@
 >
 > MA-RLHF(Multiple Adapter-RLHF)  is a low-cost and efficient large language model training system
 
-Feature：
+News：
 
-- 🔥 [2025.01.15]: **O1 traininig** support `step-wise SFT`  and `Process Reward Model`
+- 🏃 [2025.04.19～] 主分支更新代码，在random-model上全部跑同，正在调试7B效果。
+- ❄️ [2025.04.19] Frozen 1.0 pratice code in branch [ppo-multi-adapter](https://github.com/dhcode-cpp/MA-RLHF/tree/ppo-multi-adapter). It's only avaliable with `trl==0.11.0`, and SUPPORT multi-Adapter ppo
+- 🔥 [2025.01.15]: **O1 traininig** support `step-wise SFT`  and `Process Reward Model`，
+
+Feature：
 
 - System : HuggingFace* +Deepspeed + RLHF + QLoRA + Flash-Attention 2  + Unsloth + Vllm
 - 💰 Low-Cost : tuning 8B full pipeline ~ 500RMB, tuning 70B DPO pipeline ~ 5,000RMB
@@ -45,18 +49,16 @@ cd MA-RLHF
 
 Create Dev Environment
 
-如果使用`3090`多卡，可以选择`Ubuntu20.04`, `CUDA11.8` 配置的机器
+如果使用`3090`多卡，可以选择`Ubuntu22.04`, `CUDA12.4` 配置的机器
 
 ```bash
 
 conda create -n llm python=3.11
 conda activate llm
-pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-or
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-
 pip install -r requirements.txt
 pip install flash-attn # option
+
 ```
 
 Setting Environment

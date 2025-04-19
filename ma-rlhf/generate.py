@@ -50,7 +50,7 @@ if step_generate:
 else:
     input = format_prompt(instruction)
     inputs = tokenizer(input, return_tensors='pt')
-    output = model.generate(inputs['input_ids'],
+    output = model.generate(inputs['input_ids'].to(device),
                             max_new_tokens=max_new_tokens,
                             do_sample=False,
                             eos_token_id=terminators)

@@ -41,7 +41,7 @@ python test/test_reward.py
 # stage ppo prior using DPO-Model as base model
 # ~ 4hour with 8 * 3090-24GB
 rm_dataset_name='PKU-Alignment/PKU-SafeRLHF-10K'
-deepspeed  --num_gpus 8  ./ma-rlhf/ppo.py \
+deepspeed  --num_gpus 2  ./ma-rlhf/ppo.py \
 	--dataset_name=${rm_dataset_name} \
 	--model_name=${model_sft_full_path} \
 	--reward_model_name=${model_reward_model_lora_path} \
