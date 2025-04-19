@@ -8,7 +8,7 @@
 
 News：
 
-- 🏃 [2025.04.19～] 主分支更新代码，在random-model上全部跑同，正在调试7B效果。
+- 🏃 [2025.04.19～] 主分支更新代码，在random-model上全部跑通，正在调试7B效果。
 - ❄️ [2025.04.19] Frozen 1.0 pratice code in branch [ppo-multi-adapter](https://github.com/dhcode-cpp/MA-RLHF/tree/ppo-multi-adapter). It's only avaliable with `trl==0.11.0`, and SUPPORT multi-Adapter ppo
 - 🔥 [2025.01.15]: **O1 traininig** support `step-wise SFT`  and `Process Reward Model`，
 
