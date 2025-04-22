@@ -24,7 +24,7 @@ deepspeed ./ma-rlhf/dpo.py \
 	--use_flash_attention_2=True \
 	--deepspeed_config_name=${deepspeed_config_name} \
 	--batch_size=16 \
-	--num_train_epochs=1 \
+	--num_train_epochs=2 \
 	--seq_length=512 \
 	--gradient_accumulation_steps=4 \
 	--learning_rate=2e-5

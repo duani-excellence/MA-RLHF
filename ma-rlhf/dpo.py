@@ -202,7 +202,7 @@ def train():
         deepspeed=deepspeed_config_name,
         report_to='wandb',
         lr_scheduler_type='cosine',
-        max_steps=100,
+        # max_steps=100,
         # loss_type: Literal[
         #     "sigmoid", "hinge", "ipo", "kto_pair", "bco_pair", "sppo_hard", "nca_pair", "robust"
         # ] = "sigmoid"
