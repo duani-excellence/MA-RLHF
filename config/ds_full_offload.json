@@ -4,7 +4,7 @@
     "stage": 3,
     "gather_16bit_weights_on_model_save": true,
     "offload_param": {
-      "device": "cpu"
+      "device": "none"
     },
     "offload_optimizer": {
       "device": "cpu"

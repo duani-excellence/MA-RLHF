@@ -64,7 +64,9 @@ def create_model_tokenizer(name):
         use_flash_attention_2=use_flash_attention_2, # gpt 2 not support flash attention2
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
+        use_cache=False,
     )
+    model.gradient_checkpointing_enable()
 
     tokenizer = AutoTokenizer.from_pretrained(model_name,
                                                 trust_remote_code=True,
@@ -74,7 +76,7 @@ def create_model_tokenizer(name):
     tokenizer.add_special_tokens({'pad_token': DEFINE_PAD_TOKEN})
     model.pad_token_id = tokenizer.pad_token_id
     model.pad_token = tokenizer.pad_token
-    # model.config.pad_token_id = model.config.eos_token_id
+    model.config.pad_token_id = model.config.eos_token_id
 
     return model, tokenizer
 

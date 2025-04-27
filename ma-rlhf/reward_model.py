@@ -280,6 +280,7 @@ def train():
         lr_scheduler_type='cosine',
         # evaluation_strategy="steps",
         # eval_steps=100,
+        # max_steps=10,
     )
 
     trainer = RewardTrainer(

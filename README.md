@@ -100,9 +100,9 @@ when you use cpu-offload, set `DS_SKIP_CUDA_CHECK=1`
 🚀  Start  LLaMA-3-8B Train RLHF full-pipeline, also you cloud run with `scripts/run_7b_pipeline.sh`
 
 ```bash
-bash ./scripts/run_7B_sft_full.sh # or use ./scripts/run_7b_sft_qlora.sh
-bash ./scripts/run_7B_dpo.sh
-bash ./scripts/run_7B_ppo.sh
+bash ./scripts/run_7b_sft_full.sh # or use ./scripts/run_7b_sft_qlora.sh
+bash ./scripts/run_7b_dpo.sh
+bash ./scripts/run_7b_ppo.sh
 ```
 
 > [!NOTE]
