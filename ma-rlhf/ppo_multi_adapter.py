@@ -22,6 +22,8 @@ from utils import (
     SYSTEM_PROMPT,
 )
 import time
+from ma_ppo_config import MultiAdapterPPOConfig
+from ma_ppo_trainer import MultiAdapterPPOTrainer
 
 os.environ["WANDB_PROJECT"] = "ma-rlhf"
 os.environ["WANDB_RUN_NAME"] = "ppo"
@@ -168,7 +170,7 @@ def train():
     }
     output_length_sampler = LengthSampler(128, output_max_length)
 
-    config = PPOConfig(
+    config = MultiAdapterPPOConfig(
         log_with='wandb',
         learning_rate=1e-5,
         batch_size=batch_size,
@@ -184,7 +186,7 @@ def train():
         max_grad_norm=1.0,  # fix generate nan
     )
 
-    trainer = PPOTrainer(
+    trainer = MultiAdapterPPOTrainer(
         config,
         model,
         ref_model=None,  # share parameters

@@ -2,4 +2,4 @@
 
 ./scripts/run_7b_dpo.sh > ./output/log_dpo.txt 2>&1 &
 
-./scripts/run_7b_ppo.sh > ./output/log_ppo.txt 2>&1 &
+./scripts/run_7b_ma_ppo.sh > ./output/log_ppo.txt 2>&1 &
