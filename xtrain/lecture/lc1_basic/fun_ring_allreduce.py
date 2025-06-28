@@ -30,8 +30,8 @@ def run(rank, master_addr, master_port, world_size, backend='gloo'):
     # stage 1 : reduce scatter
     for i in range(world_size - 1):
         # print(i, rank)
-        cur_idx = (  i + rank ) % world_size
-        next_idx = ( i + rank + 1) % world_size
+        cur_idx = (rank - i ) % world_size
+        next_idx = (rank - i - 1) % world_size
         if rank % world_size == 0:
             dist.send(micro_batch[ cur_idx ], dst = (rank + 1) %  world_size  ) # 发送到右侧 rank
             dist.recv(tmp_tensor, src = (rank - 1) %  world_size  ) # 发送到左侧 rank
