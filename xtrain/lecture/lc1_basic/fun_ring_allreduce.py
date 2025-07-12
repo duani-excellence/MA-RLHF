@@ -48,8 +48,8 @@ def run(rank, master_addr, master_port, world_size, backend='gloo'):
     
     # stage 2 : all gather
     for i in range(world_size - 1):
-        cur_idx = (i + rank - 1 ) % world_size # rank0的起点为 world_size - 1
-        next_idx = (i + rank) % world_size
+        cur_idx = (i + rank + 1 ) % world_size # rank0的起点为 world_size - 1
+        next_idx = (cur_idx + 1) % world_size
         if rank % world_size == 0:
             dist.send(micro_batch[ cur_idx ], dst = (rank + 1) %  world_size  )
             dist.recv(tmp_tensor, src = (rank - 1) %  world_size  )
