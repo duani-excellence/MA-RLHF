@@ -23,6 +23,16 @@
 
 通信计算重叠不限定1F1B改造。前向时也可以实现，前提是2-micro-batch输入。事实上comm-comp overlap就是要求有2-micro-batch输入。
 
+
+## Part4：Inference 通信-计算重叠
+
+参考[DeepSeek-V3 / R1 推理系统概览](https://zhuanlan.zhihu.com/p/27181462601), 实现 prefill 版本的通信计算重叠
+
+| 代码                   | 功能描述                                                     | 必要 |
+| ---------------------- | ------------------------------------------------------------ | ---- |
+| `overlapped_prefill.py` | 1F1B 的 prefill 版本 | 🌟    |
+
+
 更复杂的实现 [deepep](https://github.com/deepseek-ai/DeepEP)
 
 
