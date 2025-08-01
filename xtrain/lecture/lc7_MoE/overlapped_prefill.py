@@ -301,13 +301,17 @@ class DecoderBlockOverlapped(nn.Module):
         # self.expert.f0_dispatch_wait(h0)
         # y0 = self.mlp(h0)
 
-        # F0-comb, F0-combine-wait, F1-mlp
-        # self.expert.f0_combine(h0)         # micro-0 finish
+        # F0-comb, F1-dispatch-wait, F1-mlp
+        # self.expert.f0_combine(h0)         
         # self.expert.f1_dispatch_wait(h1)
         # y1 = self.mlp(h1)
 
-        # F1-comb
-        # self.expert.f1_combine_wait(y1)    # micro-1 finish
+        # F1-comb, F0-combine-wait, 
+        # self.expert.f1_combine(y1)    # micro-1 finish
+        # self.expert.f0_combine_wait(h0)
+
+        # F1-combine-wait
+        # self.expert.f1_combine_wait(h1)
 
 
     def step(self, x0, x1_,):
