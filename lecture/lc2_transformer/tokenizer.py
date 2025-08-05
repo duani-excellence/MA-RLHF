@@ -1,48 +1,33 @@
-from typing import List, Dict, Tuple, Union, str, Any
-from abc import ABC, abstractmethod
-from typing import Any
+from abc import abstractmethod
 from dataclasses import dataclass, asdict
+from typing import List, Dict, Union
 import re
 import string
-from dataclasses import asdict
 import json
 import os
+
+from dataset import load_dataset, concat_all_text
+from utils import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
 
 def save_dict_to_json(filepath, data):
     """将字典保存为 JSON 文件"""
     with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=True, indent=4)
+        json.dump(data, f, ensure_ascii=False, indent=4)
     print(f"字典已保存为 JSON 文件: {filepath}")
-
-
-
-
-class SpecialToken:
-    def __init__(self,):
-        self.sos_token = '<SOS>'
-        self.eos_token = '<EOS>'
-        self.pad_token = '<PAD>'
-        self.unk_token = '<UNK>'
-special_token = SpecialToken()
-
 
 @dataclass
 class TokenizerBaseConfig:
     vocab_size: int = -1
     class_name: str = 'TokenizerBase'
-    sos_token: str = '<SOS>'
+    sos_token: str = SOS_TOKEN
     sos_token_id: int = -1
-    eos_token: str = '<EOS>'
+    eos_token: str = EOS_TOKEN
     eos_token_id: int = -1
-    pad_token: str = '<PAD>'
+    pad_token: str = PAD_TOKEN
     pad_token_id: int = -1
-    unk_token: str = '<UNK>'
+    unk_token: str = UNK_TOKEN
     unk_token_id: int = -1
     pattern: str = ''
-
-
-    
-
 
 
 class TokenizerBase():
@@ -52,14 +37,13 @@ class TokenizerBase():
         self.vocab_reverse: Dict[int, str] = {}
         self.vocab_size: int = 0
         self.special_token: Dict[str, int] = {}
-
         self.config = config
 
-
-        special_tokens = ['<SOS>', '<EOS>', '<PAD>', '<UNK>']
+        special_tokens = [SOS_TOKEN, EOS_TOKEN, PAD_TOKEN, UNK_TOKEN]
         zh_symbols = '，。！？；：“”‘’【】（）《》、'
         en_symbols = re.escape(string.punctuation)
         all_symbols = zh_symbols + en_symbols + ' '
+
         self.pattern = (
             r'(?:' + '|'.join(special_tokens) + ')'   
             r'|[' + re.escape(all_symbols) + ']' 
@@ -67,6 +51,16 @@ class TokenizerBase():
             r'|[\u4e00-\u9fa5]'  
             r'|[^' + re.escape(all_symbols) + r'\d\u4e00-\u9fa5<>]+'  
         )
+
+        if config is not None:
+            self.init_config(config)
+    
+    def init_config(self, config):
+        self.pattern = self.config.pattern
+        for value in self.vocab:
+            self.vocab_reverse[ self.vocab[value] ] = value
+        self.vocab_size = self.config.vocab_size
+
 
     # @abstractmethod
     def init_vocab(self, vocab: Dict[str, int]):
@@ -79,26 +73,29 @@ class TokenizerBase():
         """
         输入语料
         """
-        text_init = """
-        a b c d e f g h i j k l m n o p q r s t u v w x y z 
-        A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 
-        0 1 2 3 4 5 6 7 8 9 10 
-        <SOS> <EOS> <UNK> <PAD>
-        , 。 ！？；：“”‘’【】（）《》、!"\#\$%\&'\(\)\*\+,\-\./:;<=>\?@\[\\\]\^_`\{\|\}\~ 
+        text_init = """ 
+         a b c d e f g h i j k l m n o p q r s t u v w x y z 
+         A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 
+         0 1 2 3 4 5 6 7 8 9 10 
+         <SOS> <EOS> <UNK> <PAD> 
+         , 。 ！？；：“”‘’【】（）《》、!"\#\$%\&'\(\)\*\+,\-\./:;<=>\?@\[\\\]\^_`\{\|\}\~ 
         """
         token_init_list = re.findall(self.pattern, text_init)
         token_corpus_list = re.findall(self.pattern, text)
 
         token_all = token_init_list + token_corpus_list
 
-        # vocab : Dict[str, int] = {}
-        # vocab_reverse: Dict[str, int] = {}
         idx = 0
         for value in token_all:
             if value not in self.vocab:
                 self.vocab[value] = idx
                 self.vocab_reverse[idx] = value
                 idx += 1
+        self.vocab_size = len(self.vocab)
+
+        # for token, id in enumerate(self.special_token):
+        #     if token in self.vocab:
+        #         self.special_token[token] = self.vocab[token]
         
 
     # @abstractmethod
@@ -121,24 +118,24 @@ class TokenizerBase():
         
         token_list = []
         token_ids_list = []
-        for ids in input_list:
-            tokens = re.findall(self.pattern, input_list) # 分词规则
+        for input_text in input_list:
+            tokens = re.findall(self.pattern, input_text) # 分词规则
             token_ids = []
             for token in tokens:
                 if token in self.vocab:
                     token_ids.append(self.vocab[token])
                 else: 
                     if len(token) == 1:
-                        token_ids.append(self.vocab['<UNK>'])
+                        token_ids.append(self.vocab[UNK_TOKEN])
                     else:
                         for t in token:
                             token_ids.append( self.vocab[t] )
-            token_list.append(token)
-            token_ids_list.append(token_ids_list)
+            token_list.append(tokens)
+            token_ids_list.append(token_ids)
         return token_list, token_ids_list
 
     @abstractmethod
-    def decode(self, token_ids: list[list[int]],
+    def decode(self, token_ids: List[List[int]],
                skip_special_token : bool =True,
                return_string : bool=True
                ):
@@ -155,7 +152,36 @@ class TokenizerBase():
 
     @abstractmethod
     def from_pretrained(self, filepath : str ='./tokenizer'):
-        pass
+        vocab_path = os.path.join(filepath, 'vocab.json')
+        config_path = os.path.join(filepath, 'config.json')
+        
+        if os.path.isfile(config_path):
+            with open(config_path, encoding='utf-8') as f:
+                config = json.load(f) # loads 返回 dict
+                print('加载成功：')
+        else:
+            print(f'[错误] 文件不存在：{config_path}')
+
+            
+        if 'class_name' in config:
+            cls = globals()[config['class_name']]  # 获取类对象
+            self.config = cls(**config)
+            print(self.config)
+        else:
+            print('not specified tokenizer class name')
+
+        
+        if os.path.isfile(vocab_path):
+            with open(vocab_path, encoding='utf-8') as f:
+                self.vocab = json.load(f) # loads 返回 dict
+                print('加载成功：')
+        else:
+            print(f'[错误] 文件不存在：{vocab_path}')
+        
+
+        self.init_config(config)
+
+        return 
 
     @abstractmethod
     def save_tokenizer(self, filepath : str ='./tokenizer'):
@@ -173,16 +199,91 @@ class TokenizerBase():
         vocab_path = os.path.join(filepath, 'vocab.json')
         config_path = os.path.join(filepath, 'config.json')
 
-        config_dict = asdict(self.config)
+        if self.config is None:
+            config_dict = {
+                'vocab_size' : len(self.vocab),
+                'class_name' : 'TokenizerBaseConfig',
+                'sos_token' : SOS_TOKEN,
+                'sos_token_id' : self.vocab[SOS_TOKEN],
+                'eos_token' : EOS_TOKEN,
+                'eos_token_id' : self.vocab[EOS_TOKEN],
+                'pad_token' : PAD_TOKEN,
+                'pad_token_id'  : self.vocab[PAD_TOKEN],
+                'unk_token' : UNK_TOKEN,
+                'unk_token_id' : self.vocab[UNK_TOKEN],
+                'pattern' : self.pattern,
+            }
+
+            self.config = TokenizerBaseConfig(**config_dict)
+            config_dict = asdict(self.config)
 
         save_dict_to_json(config_path, config_dict)
         save_dict_to_json(vocab_path, self.vocab)        
 
-    @abstractmethod
-    def chat_template(self,
-                      prompt : Union[str, List[str]] =None,
-                      response : Union[str, List[str]] =None,
-                      messages :  List[Dict[str, Any]]  =None,
-                      tokenize:bool =  False,
-                      add_response_prompt : bool =False,):
-        pass
+    # @abstractmethod
+    # def chat_template(self,
+    #                   prompt : Union[str, List[str]] =None,
+    #                   response : Union[str, List[str]] =None,
+    #                   messages :  List[Dict[str, Any]]  =None,
+    #                   tokenize:bool =  False,
+    #                   add_response_prompt : bool =False,):
+    #     pass
+
+def test():
+    # init 
+    print('-'*100)
+    print('[init]....')
+    tokenizer = TokenizerBase()
+
+    # train
+    print('-'*100)
+    print('[training]....')
+    tokenizer.train('')
+
+    # save
+    print('-'*100)
+    print('[saving]....')
+    tokenizer.save_tokenizer('./output')
+    del tokenizer
+
+    # load
+    print('-'*100)
+    print('[loading]....')
+    tokenizer = TokenizerBase()
+    tokenizer.from_pretrained('./output')
+    print(tokenizer.vocab_size)
+    print(tokenizer.config)
+
+    # encode
+    print('-'*100)
+    print('[encoding]....')
+    texts = ['I love Xiao Dong Gua AIGC', 'I have a dream']
+    token_list, token_ids_list = tokenizer.encode(texts)
+    for text, token, token_ids in zip(texts, token_list, token_ids_list):
+        print(text)
+        print(token)
+        print(token_ids)
+
+    # decode
+    print('-'*100)
+    print('[decoding]....')
+    decode_texts = tokenizer.decode(token_ids_list)
+    for decode_text in decode_texts:
+        print('-'*100)
+        print(decode_text)
+        print(''.join(decode_text))
+
+if __name__ == "__main__":
+    dataset = load_dataset('./data.json')
+    text_en, text_zh = concat_all_text(dataset)
+
+    tokenizer_en = TokenizerBase()
+    tokenizer_en.train(text_en)
+    tokenizer_en.save_tokenizer('./output/tokenizer_en')
+    print('English Vocab Size:', tokenizer_en.vocab_size)
+
+    tokenizer_zh = TokenizerBase()
+    tokenizer_zh.train(text_zh)
+    tokenizer_zh.save_tokenizer('./output/tokenizer_zh')
+    print('Chinese Vocab Size:', tokenizer_zh.vocab_size)
+    
