@@ -1,12 +1,23 @@
 import torch
 import random
+from typing import Dict
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import json
 import os
 
 
-def paddding_collate_fn(batch_data, pad_token_id):
+class PaddingCollateFunction:
+    def __init__(self, src_pad_token_id : int, trg_pad_token_id : int):
+        self.src_pad_token_id = src_pad_token_id
+        self.trg_pad_token_id = trg_pad_token_id
+
+    def __call__(self, batch) -> Dict:
+        batch = paddding_collate_fn(batch, self.src_pad_token_id, self.src_pad_token_id)
+        return batch
+    
+
+def paddding_collate_fn(batch_data, src_pad_token_id = None, trg_pad_token_id = None,):
 
     input_lens = []
     label_lens = []
@@ -18,9 +29,9 @@ def paddding_collate_fn(batch_data, pad_token_id):
     max_input_len = torch.max(torch.tensor(input_lens, dtype = torch.long))
     max_label_len = torch.max(torch.tensor(label_lens, dtype = torch.long))
 
-    input_ids = torch.ones(bs, max_input_len, dtype = torch.long) * pad_token_id
+    input_ids = torch.ones(bs, max_input_len, dtype = torch.long) * src_pad_token_id
     input_attention_masks = torch.zeros(bs, max_input_len, dtype = torch.long) 
-    label_ids = torch.ones(bs, max_label_len, dtype = torch.long) * pad_token_id
+    label_ids = torch.ones(bs, max_label_len, dtype = torch.long) * trg_pad_token_id
     label_attention_masks = torch.zeros(bs, max_label_len, dtype = torch.long) 
 
     for i in range(bs):

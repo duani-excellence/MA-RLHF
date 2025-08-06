@@ -30,7 +30,7 @@ class TokenizerBaseConfig:
     pattern: str = ''
 
 
-class TokenizerBase():
+class TokenizerBase:
     # @abstractmethod
     def __init__(self, config : TokenizerBaseConfig= None):
         self.vocab: Dict[str, int] = {}
@@ -125,10 +125,10 @@ class TokenizerBase():
                 if token in self.vocab:
                     token_ids.append(self.vocab[token])
                 else: 
-                    if len(token) == 1:
-                        token_ids.append(self.vocab[UNK_TOKEN])
-                    else:
-                        for t in token:
+                    for t in token:
+                        if t not in self.vocab:
+                            token_ids.append(self.vocab[UNK_TOKEN])
+                        else:
                             token_ids.append( self.vocab[t] )
             token_list.append(tokens)
             token_ids_list.append(token_ids)
@@ -158,7 +158,7 @@ class TokenizerBase():
         if os.path.isfile(config_path):
             with open(config_path, encoding='utf-8') as f:
                 config = json.load(f) # loads 返回 dict
-                print('加载成功：')
+                # print('加载成功：')
         else:
             print(f'[错误] 文件不存在：{config_path}')
 
@@ -166,7 +166,7 @@ class TokenizerBase():
         if 'class_name' in config:
             cls = globals()[config['class_name']]  # 获取类对象
             self.config = cls(**config)
-            print(self.config)
+            # print(self.config)
         else:
             print('not specified tokenizer class name')
 
@@ -174,7 +174,7 @@ class TokenizerBase():
         if os.path.isfile(vocab_path):
             with open(vocab_path, encoding='utf-8') as f:
                 self.vocab = json.load(f) # loads 返回 dict
-                print('加载成功：')
+                # print('加载成功：')
         else:
             print(f'[错误] 文件不存在：{vocab_path}')
         

@@ -5,67 +5,72 @@ import math
 torch.manual_seed(42)
 
 
-def get_src_mask(input_ids, pad_token_id = 0):
+def get_src_mask(input_ids, pad_token_id=0):
     bs, seq_len = input_ids.shape
     mask = torch.ones(bs, seq_len, seq_len)
     for i in range(bs):
-        pad_idx =  torch.where(input_ids[i, :]  == pad_token_id)[0]
+        pad_idx = torch.where(input_ids[i, :] == pad_token_id)[0]
         mask[i, pad_idx, :] = 0
         mask[i, :, pad_idx] = 0
     return mask
 
-def get_trg_mask(input_ids, pad_token_id = 0):
+
+def get_trg_mask(input_ids, pad_token_id=0):
     bs, seq_len = input_ids.shape
-    mask = torch.tril(torch.ones(bs, seq_len, seq_len)) # tril
+    mask = torch.tril(torch.ones(bs, seq_len, seq_len))  # tril
     for i in range(bs):
-        pad_idx =  torch.where(input_ids[i, :]  == pad_token_id)[0]
+        pad_idx = torch.where(input_ids[i, :] == pad_token_id)[0]
         mask[i, pad_idx, :] = 0
         mask[i, :, pad_idx] = 0
     return mask
 
-def get_src_trg_mask(src_ids, trg_ids, pad_token_id = 0):
+
+def get_src_trg_mask(src_ids, trg_ids,
+                     src_pad_token_id=0,
+                     trg_pad_token_id=0
+                     ):
     bs, src_seq_len = src_ids.shape
     bs, trg_seq_len = trg_ids.shape
-    
-    mask = torch.ones(bs, trg_seq_len, src_seq_len) # tril
+
+    mask = torch.ones(bs, trg_seq_len, src_seq_len)  # tril
     for i in range(bs):
-        src_pad_idx =  torch.where(src_ids[i, :]  == pad_token_id)[0]
-        trg_pad_idx =  torch.where(trg_ids[i, :]  == pad_token_id)[0]
+        src_pad_idx = torch.where(src_ids[i, :] == src_pad_token_id)[0]
+        trg_pad_idx = torch.where(trg_ids[i, :] == trg_pad_token_id)[0]
         mask[i, trg_pad_idx, :] = 0
         mask[i, :, src_pad_idx] = 0
     return mask
 
 
-class TransformerConfig():
-    def __init__(self,):
-        self.src_vocab_size = 100
-        self.trg_vocab_size = 200
-        self.max_len = 512
-        self.dim = 512
-        self.heads = 8
-        self.num_layers = 6
-        self.position_encoding_base = 10000.0
-        self.pad_token_id = -1
-        
+class TransformerConfig:
+    src_vocab_size: int = 100
+    trg_vocab_size: int = 200
+    max_len: int = 512
+    dim: int = 512
+    heads: int = 8
+    num_layers: int = 6
+    position_encoding_base: int = 10000.0
+    pad_token_id: float = -1
+
 
 class TransformerInputLayer(nn.Module):
     """
     词向量 + 位置编码
     """
-    def __init__(self, vocab_size = 100, dim = 512, max_len = 1024, base = 10000.0):
+
+    def __init__(self, vocab_size=100, dim=512, max_len=1024, base=10000.0):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, dim)
         self.max_len = max_len
 
-        theta_ids = torch.arange(0, dim, 2) # 0, 2, 4, ..., 512
-        theta =  1 / ( base ** ( theta_ids / dim ) )
-        pe = torch.zeros(dim) # 512, sin( theta_0 ),cos( theta_0), ...
+        theta_ids = torch.arange(0, dim, 2)  # 0, 2, 4, ..., 512
+        theta = 1 / (base ** (theta_ids / dim))
+        pe = torch.zeros(dim)  # 512, sin( theta_0 ),cos( theta_0), ...
         pe[theta_ids] = theta
         pe[theta_ids+1] = theta
 
-        position_ids = torch.arange(0, max_len) # 0, 1, 2, ..., 1024
-        self.PE = torch.outer(position_ids, pe) # 1024 x 512
-        
+        position_ids = torch.arange(0, max_len)  # 0, 1, 2, ..., 1024
+        self.PE = torch.outer(position_ids, pe)  # 1024 x 512
+
         self.PE[:, theta_ids] = torch.sin(self.PE[:, theta_ids])
         self.PE[:, theta_ids+1] = torch.sin(self.PE[:, theta_ids+1])
 
@@ -78,21 +83,23 @@ class TransformerInputLayer(nn.Module):
         PE = self.PE[:seq_len, :]
         X_ = X + PE
         return X_
-    
-    
+
+
 class LayerNorm(nn.Module):
     def __init__(self, dim, ):
         super().__init__()
         self.gamma = nn.Parameter(torch.ones(dim))
         self.beta = nn.Parameter(torch.zeros(dim))
         self.epsilon = 1e-8
+
     def forward(self, X, ):
-        mu = X.mean( dim = -1, keepdim = True)
-        var = X.var( dim = -1, keepdim = True)
-        X_hat = ( X - mu ) / torch.sqrt( var + self.epsilon)
+        mu = X.mean(dim=-1, keepdim=True)
+        var = X.var(dim=-1, keepdim=True)
+        X_hat = (X - mu) / torch.sqrt(var + self.epsilon)
         Y = X_hat * self.gamma + self.beta
         return Y
-    
+
+
 class FeedForwardNetwork(nn.Module):
     def __init__(self, dim, ):
         super().__init__()
@@ -100,13 +107,15 @@ class FeedForwardNetwork(nn.Module):
         self.W_up = nn.Linear(self.dim, 4 * self.dim)
         self.ReLU = nn.ReLU()
         self.W_down = nn.Linear(4 * self.dim, self.dim)
+
     def forward(self, X):
         X_ = self.ReLU(self.W_up(X))
         Y = self.W_down(X_)
         return Y
-        
+
+
 class MultiHeadScaleDotProductAttention(nn.Module):
-    def __init__(self, dim_in, dim_out, heads = 8):
+    def __init__(self, dim_in, dim_out, heads=8):
         super().__init__()
         self.WQ = nn.Linear(dim_in, dim_out)
         self.WK = nn.Linear(dim_in, dim_out)
@@ -114,8 +123,8 @@ class MultiHeadScaleDotProductAttention(nn.Module):
         self.WO = nn.Linear(dim_in, dim_out)
         self.heads = heads
         self.head_dim = dim_out // self.heads
-        
-    def forward(self, X_Q, X_K, X_V, mask = None):
+
+    def forward(self, X_Q, X_K, X_V, mask=None):
         bs, seq_len, dim = X_Q.shape
         bs, seq_K_len, dim = X_K.shape
         bs, seq_V_len, dim = X_V.shape
@@ -124,36 +133,39 @@ class MultiHeadScaleDotProductAttention(nn.Module):
         V = self.WV(X_V)
 
         # 拆分维度
-        Q_h = Q.view(bs, seq_len, self.heads, self.head_dim).transpose(1,2)
-        K_h = K.view(bs, seq_K_len, self.heads, self.head_dim).transpose(1,2) # KV len 可以不等同于 Q len
-        V_h = V.view(bs, seq_V_len, self.heads, self.head_dim).transpose(1,2)
+        Q_h = Q.view(bs, seq_len, self.heads, self.head_dim).transpose(1, 2)
+        K_h = K.view(bs, seq_K_len, self.heads, self.head_dim).transpose(
+            1, 2)  # KV len 可以不等同于 Q len
+        V_h = V.view(bs, seq_V_len, self.heads, self.head_dim).transpose(1, 2)
 
         # 多个 q_i 计算注意力特征
-        S = Q_h @ K_h.transpose(2,3) / math.sqrt(self.head_dim) # 1. 为什么要除于 \sqrt{d}
+        # 1. 为什么要除于 \sqrt{d}
+        S = Q_h @ K_h.transpose(2, 3) / math.sqrt(self.head_dim)
 
         if mask is not None:
             idx = torch.where(mask == 0)
-            S[:, idx[0],idx[1],idx[2]] = -10000.0
-        
-        P = torch.softmax(S, dim = -1) # 行 softmax
+            S[idx[0], :, idx[1], idx[2]] = -10000.0
+
+        P = torch.softmax(S, dim=-1)  # 行 softmax
         Z = P @ V_h
 
         # 恢复维度
-        Z = Z.transpose(1,2).reshape(bs, seq_len, dim)
-        
+        Z = Z.transpose(1, 2).reshape(bs, seq_len, dim)
+
         output = self.WO(Z)
-        
+
         return output
-    
+
+
 class TransformerEncoderBlock(nn.Module):
-    def __init__(self, dim = 512, heads = 8):
+    def __init__(self, dim=512, heads=8):
         super().__init__()
         self.attn = MultiHeadScaleDotProductAttention(dim, dim, heads)
         self.ln1 = LayerNorm(dim)
         self.ffn = FeedForwardNetwork(dim)
         self.ln2 = LayerNorm(dim)
-        
-    def forward(self, X, src_mask = None):
+
+    def forward(self, X, src_mask=None):
         X_attn = self.attn(X, X, X)
         X_ln = self.ln1(X_attn)
         X = X + X_ln
@@ -164,40 +176,44 @@ class TransformerEncoderBlock(nn.Module):
 
         return X
 
+
 class TransformerEncoder(nn.Module):
     """
     输入 原文本序列，输出 token 序列的编码表征
     输入:[bs, src_seq_len, dim]
     输出:[bs, src_seq_len, dim]
     """
-    def __init__(self, dim = 512, num_layers = 6, heads = 8):
+
+    def __init__(self, dim=512, num_layers=6, heads=8):
         super().__init__()
-        # self.encoder = nn.Linear(dim, dim) 
+        # self.encoder = nn.Linear(dim, dim)
         self.encoder = nn.ModuleList(
             [TransformerEncoderBlock(dim, heads) for _ in range(num_layers)]
         )
-    def forward(self, X, mask = None):
+
+    def forward(self, X, mask=None):
         for encode_block in self.encoder:
             X = encode_block(X, mask)
         return X
-        
+
+
 class TransformerDecoderBlock(nn.Module):
-    def __init__(self, dim = 512, heads = 8):
+    def __init__(self, dim=512, heads=8):
         super().__init__()
         self.masked_attn = MultiHeadScaleDotProductAttention(dim, dim, heads)
         self.ln1 = LayerNorm(dim)
-    
+
         self.cross_attn = MultiHeadScaleDotProductAttention(dim, dim, heads)
         self.ln2 = LayerNorm(dim)
-        
+
         self.ffn = FeedForwardNetwork(dim)
         self.ln3 = LayerNorm(dim)
-        
-    def forward(self, X, X_src, trg_mask = None, src_trg_mask = None):
+
+    def forward(self, X, X_src, trg_mask=None, src_trg_mask=None):
         X_attn = self.masked_attn(X, X, X, trg_mask)
         X_ln = self.ln1(X_attn)
         X = X + X_ln
-        
+
         X_attn = self.cross_attn(X, X_src, X_src, src_trg_mask)
         X_ln = self.ln2(X_attn)
         X = X + X_ln
@@ -207,90 +223,108 @@ class TransformerDecoderBlock(nn.Module):
         X = X + X_ln
         return X
 
+
 class TransformerDecoder(nn.Module):
     """
     输入:[bs, trg_seq_len, dim]
     输出:[bs, trc_seq_len, dim]
     """
-    def __init__(self, dim = 512, num_layers = 6, heads = 8):
+
+    def __init__(self, dim=512, num_layers=6, heads=8):
         super().__init__()
-        # self.decoder = nn.Linear(dim, dim) 
+        # self.decoder = nn.Linear(dim, dim)
         self.decoder = nn.ModuleList(
             [TransformerDecoderBlock(dim, heads) for i in range(num_layers)]
         )
-    def forward(self, X, X_src, trg_mask = None, src_trg_mask = None):
+
+    def forward(self, X, X_src, trg_mask=None, src_trg_mask=None):
         for decoder_block in self.decoder:
-            X = decoder_block(X, X_src, trg_mask, src_trg_mask)
+            X = decoder_block(X, X_src, trg_mask=trg_mask,
+                              src_trg_mask=src_trg_mask)
         return X
+
 
 class TransformerOutputLayer(nn.Module):
     """
     """
-    def __init__(self, vocab_size = 100, dim = 512):
+
+    def __init__(self, vocab_size=100, dim=512):
         super().__init__()
         self.lm_head = nn.Linear(dim, vocab_size)
-        self.softmax = nn.Softmax(dim = -1)
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, X):
         logits = self.lm_head(X)
         prob = self.softmax(logits)
         return logits
 
+
 class Transformer(nn.Module):
     """
-    输入:[bs, src_seq_len]
-    输出:[bs, trg_seq_len, vocab_size]
+    实际代码实现可以用 config 来初始化或传参, 提升代码简洁性。
+    手动传参好处在于: 能够明白每层的具体的超参数、输入和输出。
     """
-    def __init__(self, src_vocab_size = 100, 
-                 trg_vocab_size = 200, 
-                 dim = 512, 
-                 num_layers = 6, 
-                 heads = 8, 
-                 max_len = 512,
-                 pad_token_id = 0):
+
+    def __init__(self, src_vocab_size=100,
+                 trg_vocab_size=200,
+                 dim=512,
+                 num_layers=6,
+                 heads=8,
+                 max_len=512,
+                 src_pad_token_id=0,
+                 trg_pad_token_id=0):
         super().__init__()
         self.src_vocab_size = src_vocab_size
         self.dim = dim
         self.num_layers = num_layers
         self.heads = heads
         self.max_len = max_len
-        self.pad_token_id = pad_token_id
+        self.src_pad_token_id = src_pad_token_id
+        self.trg_pad_token_id = trg_pad_token_id
 
-        self.encoder_input = TransformerInputLayer(vocab_size = src_vocab_size, 
-                                                   dim = dim, 
-                                                   max_len = max_len, )
-        self.encoder = TransformerEncoder(dim = dim, 
-                                          num_layers = num_layers, 
-                                          heads = heads)
-        self.decoder_input = TransformerInputLayer(vocab_size = trg_vocab_size, 
-                                                   dim = dim, 
-                                                   max_len = max_len, )
-        self.decoder = TransformerDecoder(dim = dim, 
-                                          num_layers = num_layers, 
-                                          heads = heads)
-        self.output_layer = TransformerOutputLayer(vocab_size = trg_vocab_size, 
-                                                  dim = dim)
-        
+        self.encoder_input = TransformerInputLayer(vocab_size=src_vocab_size,
+                                                   dim=dim,
+                                                   max_len=max_len, )
+        self.encoder = TransformerEncoder(dim=dim,
+                                          num_layers=num_layers,
+                                          heads=heads)
+        self.decoder_input = TransformerInputLayer(vocab_size=trg_vocab_size,
+                                                   dim=dim,
+                                                   max_len=max_len, )
+        self.decoder = TransformerDecoder(dim=dim,
+                                          num_layers=num_layers,
+                                          heads=heads)
+        self.output_layer = TransformerOutputLayer(vocab_size=trg_vocab_size,
+                                                   dim=dim)
+
     def forward(self, src_ids, trg_ids):
-    
-        src_mask = get_src_mask(src_ids, pad_token_id = self.pad_token_id)
+        """
+        输入:[bs, src_seq_len], [bs, trg_seq_len -1]
+        输出:[bs, trg_seq_len - 1, trg_vocab_size]
+        """
+
+        src_mask = get_src_mask(src_ids, pad_token_id=self.src_pad_token_id)
         X = self.encoder_input(src_ids)
         X_src = self.encoder(X, src_mask)
 
-        trg_mask = get_trg_mask(src_ids, pad_token_id = self.pad_token_id)
-        src_trg_mask = get_src_trg_mask(src_ids, trg_ids, pad_token_id = self.pad_token_id)
+        trg_mask = get_trg_mask(trg_ids, pad_token_id=self.trg_pad_token_id)
+        src_trg_mask = get_src_trg_mask(src_ids, trg_ids,
+                                        src_pad_token_id=self.src_pad_token_id,
+                                        trg_pad_token_id=self.trg_pad_token_id,)
         Y = self.decoder_input(trg_ids)
-        Y = self.decoder(Y, X_src, trg_mask = trg_mask, src_trg_mask = src_trg_mask)
+        Y = self.decoder(Y, X_src, trg_mask=trg_mask,
+                         src_trg_mask=src_trg_mask)
 
-        logits = self.output_layer(Y) 
-        prob = F.softmax(logits, dim = -1)
-        
+        logits = self.output_layer(Y)
+        prob = F.softmax(logits, dim=-1)
+
         return logits, prob
+
 
 if __name__ == "__main__":
     config = TransformerConfig()
     model = Transformer()
-    X = torch.randint(0, config.src_vocab_size, (2, 3), dtype = torch.long)
-    Y = torch.randint(0, config.trg_vocab_size, (2, 7), dtype = torch.long)
+    X = torch.randint(0, config.src_vocab_size, (2, 3), dtype=torch.long)
+    Y = torch.randint(0, config.trg_vocab_size, (2, 7), dtype=torch.long)
     logits, _ = model(X, Y)
     print(logits.shape)
