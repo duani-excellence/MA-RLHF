@@ -275,6 +275,10 @@ def test():
 
 
 if __name__ == "__main__":
+    # test
+    test()
+
+    # train tokenizer for Transformer model
     dataset = load_dataset('./data.json')
     text_en, text_zh = concat_all_text(dataset)
 

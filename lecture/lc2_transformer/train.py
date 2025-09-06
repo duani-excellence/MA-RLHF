@@ -5,9 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-import math
-
-from tokenizer import TokenizerBase, TokenizerBaseConfig
+from tokenizer import TokenizerBase
 from model import Transformer
 from dataset import load_dataset, Seq2SeqTransformersDataset, PaddingCollateFunction
 from utils import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN, IGNORE_INDEX, token_pre_process
@@ -118,9 +116,8 @@ if __name__ == "__main__":
                 # f"epochs:{i}, step:{total_step}, train_loss: {loss.item()}")
                 # tqdm.write("\n" + "=" * 80)
                 tqdm.write(f"Epoch {i+1} | "
-                           f"Total Steps {total_step} | "
+                           f"Steps {total_step} | "
                            f"Loss: {loss.item():.4f} | ")
-                # tqdm.write("=" * 80 + "\n")
 
             train_dataloader_tqdm.set_postfix(
                 loss=f'{loss.item():.4f}',
