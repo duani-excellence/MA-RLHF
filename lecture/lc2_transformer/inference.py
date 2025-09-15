@@ -33,7 +33,6 @@ def generate(model,
     X_src = None
     N, seq_len = inputs.shape
     Y = torch.ones(N, 1, dtype=torch.long) * trg_tokenizer.vocab[SOS_TOKEN]
-    print(Y.shape)
     for i in range(max_new_tokens):
         logits, prob, src_mask, X_src = model(inputs, Y, src_mask, X_src)
         # logits = logits[:, -1, :]

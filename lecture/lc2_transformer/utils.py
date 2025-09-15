@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+import argparse
 torch.manual_seed(42)
 
 PAD_TOKEN = "<PAD>"
@@ -88,3 +89,27 @@ def get_src_trg_mask(src_ids, trg_ids,
         mask[i, trg_pad_idx, :] = 0
         mask[i, :, src_pad_idx] = 0
     return mask
+
+
+def get_argparse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
+    parser.add_argument("--model_path", type=str, default=None)
+    parser.add_argument("--src_tokenizer_path",
+                        type=str,
+                        default='./output/tokenizer_zh',
+                        # required=True
+                        )
+    parser.add_argument("--trg_tokenizer_path",
+                        type=str,
+                        default='./output/tokenizer_en',
+                        # required=True
+                        )
+    parser.add_argument("--output_path",
+                        type=str,
+                        default='./output/transformer',
+                        # required=True
+                        )
+    return parser

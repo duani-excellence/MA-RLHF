@@ -42,7 +42,9 @@
 | -------------- | ------------------------------------------------------------ | ---- |
 | `tokenizer.py` | 加载`data.json`中英语料，分别训练中英分词器，可以保存和加载。可以了解分词器存储的内容和分词的规则，共同决定 encode 和 decode 结果。 | ✅    |
 | `dataset.py`   | 将 `data.json` 转化为 训练所用的 数据格式。                  | ✅    |
+| `utils.py`     | 处理 mask 和 参数对象                                        | ✅    |
+| `config.py`    | 独立管理 config, 可通过 config 初始化模型                    | ✅    |
 | `model.py`     | 实现 Transformer 模型，需注意每个模块的输入参数。注意 mask 的实现细节。 | ✅🌟   |
-| `train.py`     | 加载 `tokenizer`, `dataset` ，并初始化一个 Transformer 模型进行训练，在训练中用交叉熵损失，手写训练流程。TODO：增加模型保存、训练曲线绘制。 | ✅🌟   |
-| `inference.py` | TODO。加载已训练好的模型，用于推理预测。即中英翻译测试。     | ✅    |
+| `train.py`     | 加载 `tokenizer`, `dataset` ，并初始化一个 Transformer 模型进行训练，在训练中用交叉熵损失，手写训练流程。TODO：训练曲线绘制。 | ✅🌟   |
+| `inference.py` | 加载已训练好的模型，用于推理预测。即中英翻译测试。           | ✅🌟   |
 

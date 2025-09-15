@@ -8,13 +8,22 @@ from tqdm import tqdm
 from tokenizer import TokenizerBase
 from model import Transformer
 from dataset import load_dataset, Seq2SeqTransformersDataset, PaddingCollateFunction
-from utils import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN, IGNORE_INDEX, token_pre_process
 from config import TransformerModelConfig
+from utils import (
+    PAD_TOKEN,
+    SOS_TOKEN,
+    EOS_TOKEN,
+    UNK_TOKEN,
+    IGNORE_INDEX,
+    token_pre_process,
+    get_argparse
+)
 
 torch.manual_seed(42)
 
 
-def process(data, batch_size=2,
+def process(data,
+            batch_size: int = 2,
             src_tokenizer: TokenizerBase = None,
             trg_tokenizer: TokenizerBase = None):
     print(len(data['x']))
@@ -51,11 +60,14 @@ def process(data, batch_size=2,
 
 if __name__ == "__main__":
 
+    parser = get_argparse()
+    args = parser.parse_args()
+
     # load tokenizer
     src_tokenizer = TokenizerBase()
-    src_tokenizer.from_pretrained('./output/tokenizer_zh')
+    src_tokenizer.from_pretrained(args.src_tokenizer_path)
     trg_tokenizer = TokenizerBase()
-    trg_tokenizer.from_pretrained('./output/tokenizer_en')
+    trg_tokenizer.from_pretrained(args.trg_tokenizer_path)
 
     # create model
     config = TransformerModelConfig(
@@ -69,20 +81,20 @@ if __name__ == "__main__":
         src_pad_token_id=src_tokenizer.vocab[PAD_TOKEN],
         trg_pad_token_id=trg_tokenizer.vocab[PAD_TOKEN],
     )
-    model, _, _ = Transformer(config)
+    model = Transformer(config)
 
     # load dataset
     data = load_dataset('data.json')
     train_dataloader = process(
-        data['train'], src_tokenizer=src_tokenizer, trg_tokenizer=trg_tokenizer, batch_size=16)
+        data['train'], src_tokenizer=src_tokenizer, trg_tokenizer=trg_tokenizer, batch_size=args.batch_size)
     test_dataloader = process(
-        data['test'], src_tokenizer=src_tokenizer, trg_tokenizer=trg_tokenizer, batch_size=16)
+        data['test'], src_tokenizer=src_tokenizer, trg_tokenizer=trg_tokenizer, batch_size=args.batch_size)
 
     # train
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
     loss_fn = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
 
-    epochs = 1
+    epochs = args.epochs
     train_loss = []
     test_loss = []
     total_step = 0
@@ -104,7 +116,7 @@ if __name__ == "__main__":
             X = batch['input_ids']
             Y = batch['label_ids'][:, :-1]
 
-            logits, _ = model(X, Y, )
+            logits, _, _, _ = model(X, Y, )
 
             label = batch['label_ids'].clone()[:, 1:]
             bs, tmp_trg_len = label.shape
@@ -134,6 +146,6 @@ if __name__ == "__main__":
     # evaluation
 
     # save_pretrained
-    model.save('./output/transformer')
-    src_tokenizer.save_tokenizer('./output/transformer/tokenizer_zh')
-    trg_tokenizer.save_tokenizer('./output/transformer/tokenizer_en')
+    model.save(args.output_path)
+    src_tokenizer.save_tokenizer(args.output_path + '/tokenizer_zh')
+    trg_tokenizer.save_tokenizer(args.output_path + '/tokenizer_en')
