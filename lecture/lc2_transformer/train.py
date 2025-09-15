@@ -9,6 +9,7 @@ from tokenizer import TokenizerBase
 from model import Transformer
 from dataset import load_dataset, Seq2SeqTransformersDataset, PaddingCollateFunction
 from utils import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN, IGNORE_INDEX, token_pre_process
+from config import TransformerModelConfig
 
 torch.manual_seed(42)
 
@@ -57,11 +58,18 @@ if __name__ == "__main__":
     trg_tokenizer.from_pretrained('./output/tokenizer_en')
 
     # create model
-    model = Transformer(src_vocab_size=src_tokenizer.vocab_size,
-                        trg_vocab_size=trg_tokenizer.vocab_size,
-                        src_pad_token_id=src_tokenizer.vocab[PAD_TOKEN],
-                        trg_pad_token_id=trg_tokenizer.vocab[PAD_TOKEN],
-                        )
+    config = TransformerModelConfig(
+        src_vocab_size=src_tokenizer.vocab_size,
+        trg_vocab_size=trg_tokenizer.vocab_size,
+        max_len=512,
+        dim=16,
+        heads=8,
+        num_layers=1,
+        position_encoding_base=10000.0,
+        src_pad_token_id=src_tokenizer.vocab[PAD_TOKEN],
+        trg_pad_token_id=trg_tokenizer.vocab[PAD_TOKEN],
+    )
+    model, _, _ = Transformer(config)
 
     # load dataset
     data = load_dataset('data.json')
@@ -74,7 +82,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
     loss_fn = nn.CrossEntropyLoss(ignore_index=IGNORE_INDEX)
 
-    epochs = 3
+    epochs = 1
     train_loss = []
     test_loss = []
     total_step = 0
@@ -123,6 +131,9 @@ if __name__ == "__main__":
                 loss=f'{loss.item():.4f}',
             )
 
-    # # evaluation
+    # evaluation
 
-    # # save
+    # save_pretrained
+    model.save('./output/transformer')
+    src_tokenizer.save_tokenizer('./output/transformer/tokenizer_zh')
+    trg_tokenizer.save_tokenizer('./output/transformer/tokenizer_en')

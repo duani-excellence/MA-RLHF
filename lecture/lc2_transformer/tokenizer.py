@@ -214,8 +214,7 @@ class TokenizerBase:
             }
 
             self.config = TokenizerBaseConfig(**config_dict)
-            config_dict = asdict(self.config)
-
+        config_dict = asdict(self.config)
         save_dict_to_json(config_path, config_dict)
         save_dict_to_json(vocab_path, self.vocab)
 

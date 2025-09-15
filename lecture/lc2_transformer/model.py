@@ -1,55 +1,11 @@
+from config import TransformerModelConfig
+from utils import get_src_mask, get_trg_mask, get_src_trg_mask
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
 torch.manual_seed(42)
-
-
-def get_src_mask(input_ids, pad_token_id=0):
-    bs, seq_len = input_ids.shape
-    mask = torch.ones(bs, seq_len, seq_len)
-    for i in range(bs):
-        pad_idx = torch.where(input_ids[i, :] == pad_token_id)[0]
-        mask[i, pad_idx, :] = 0
-        mask[i, :, pad_idx] = 0
-    return mask
-
-
-def get_trg_mask(input_ids, pad_token_id=0):
-    bs, seq_len = input_ids.shape
-    mask = torch.tril(torch.ones(bs, seq_len, seq_len))  # tril
-    for i in range(bs):
-        pad_idx = torch.where(input_ids[i, :] == pad_token_id)[0]
-        mask[i, pad_idx, :] = 0
-        mask[i, :, pad_idx] = 0
-    return mask
-
-
-def get_src_trg_mask(src_ids, trg_ids,
-                     src_pad_token_id=0,
-                     trg_pad_token_id=0
-                     ):
-    bs, src_seq_len = src_ids.shape
-    bs, trg_seq_len = trg_ids.shape
-
-    mask = torch.ones(bs, trg_seq_len, src_seq_len)  # tril
-    for i in range(bs):
-        src_pad_idx = torch.where(src_ids[i, :] == src_pad_token_id)[0]
-        trg_pad_idx = torch.where(trg_ids[i, :] == trg_pad_token_id)[0]
-        mask[i, trg_pad_idx, :] = 0
-        mask[i, :, src_pad_idx] = 0
-    return mask
-
-
-class TransformerConfig:
-    src_vocab_size: int = 100
-    trg_vocab_size: int = 200
-    max_len: int = 512
-    dim: int = 512
-    heads: int = 8
-    num_layers: int = 6
-    position_encoding_base: int = 10000.0
-    pad_token_id: float = -1
 
 
 class TransformerInputLayer(nn.Module):
@@ -265,52 +221,52 @@ class Transformer(nn.Module):
     手动传参好处在于: 能够明白每层的具体的超参数、输入和输出。
     """
 
-    def __init__(self, src_vocab_size=100,
-                 trg_vocab_size=200,
-                 dim=512,
-                 num_layers=6,
-                 heads=8,
-                 max_len=512,
-                 src_pad_token_id=0,
-                 trg_pad_token_id=0):
+    def __init__(self, config: TransformerModelConfig = None):
         super().__init__()
-        self.src_vocab_size = src_vocab_size
-        self.dim = dim
-        self.num_layers = num_layers
-        self.heads = heads
-        self.max_len = max_len
-        self.src_pad_token_id = src_pad_token_id
-        self.trg_pad_token_id = trg_pad_token_id
+        self.config = config
+        # self.src_vocab_size = config.src_vocab_size
+        # self.dim = config.dim
+        # self.num_layers = config.num_layers
+        # self.heads = config.heads
+        # self.max_len = config.max_len
+        # self.src_pad_token_id = config.src_pad_token_id
+        # self.trg_pad_token_id = config.trg_pad_token_id
 
-        self.encoder_input = TransformerInputLayer(vocab_size=src_vocab_size,
-                                                   dim=dim,
-                                                   max_len=max_len, )
-        self.encoder = TransformerEncoder(dim=dim,
-                                          num_layers=num_layers,
-                                          heads=heads)
-        self.decoder_input = TransformerInputLayer(vocab_size=trg_vocab_size,
-                                                   dim=dim,
-                                                   max_len=max_len, )
-        self.decoder = TransformerDecoder(dim=dim,
-                                          num_layers=num_layers,
-                                          heads=heads)
-        self.output_layer = TransformerOutputLayer(vocab_size=trg_vocab_size,
-                                                   dim=dim)
+        self.encoder_input = TransformerInputLayer(vocab_size=self.config.src_vocab_size,
+                                                   dim=self.config.dim,
+                                                   max_len=self.config.max_len, )
+        self.encoder = TransformerEncoder(dim=self.config.dim,
+                                          num_layers=self.config.num_layers,
+                                          heads=self.config.heads)
+        self.decoder_input = TransformerInputLayer(vocab_size=self.config.trg_vocab_size,
+                                                   dim=self.config.dim,
+                                                   max_len=self.config.max_len, )
+        self.decoder = TransformerDecoder(dim=self.config.dim,
+                                          num_layers=self.config.num_layers,
+                                          heads=self.config.heads)
+        self.output_layer = TransformerOutputLayer(vocab_size=self.config.trg_vocab_size,
+                                                   dim=self.config.dim)
 
-    def forward(self, src_ids, trg_ids):
+    def forward(self, src_ids, trg_ids, src_mask=None, X_src=None):
         """
         输入:[bs, src_seq_len], [bs, trg_seq_len -1]
         输出:[bs, trg_seq_len - 1, trg_vocab_size]
         """
 
-        src_mask = get_src_mask(src_ids, pad_token_id=self.src_pad_token_id)
-        X = self.encoder_input(src_ids)
-        X_src = self.encoder(X, src_mask)
+        # Prefill
+        # 在 Inference 阶段，单次编码，多次解码
+        if src_mask is None and X_src is None:
+            src_mask = get_src_mask(
+                src_ids, pad_token_id=self.config.src_pad_token_id)
+            X = self.encoder_input(src_ids)
+            X_src = self.encoder(X, src_mask)
 
-        trg_mask = get_trg_mask(trg_ids, pad_token_id=self.trg_pad_token_id)
+        # Decoding
+        trg_mask = get_trg_mask(
+            trg_ids, pad_token_id=self.config.trg_pad_token_id)
         src_trg_mask = get_src_trg_mask(src_ids, trg_ids,
-                                        src_pad_token_id=self.src_pad_token_id,
-                                        trg_pad_token_id=self.trg_pad_token_id,)
+                                        src_pad_token_id=self.config.src_pad_token_id,
+                                        trg_pad_token_id=self.config.trg_pad_token_id,)
         Y = self.decoder_input(trg_ids)
         Y = self.decoder(Y, X_src, trg_mask=trg_mask,
                          src_trg_mask=src_trg_mask)
@@ -318,13 +274,82 @@ class Transformer(nn.Module):
         logits = self.output_layer(Y)
         prob = F.softmax(logits, dim=-1)
 
-        return logits, prob
+        return logits, prob, src_mask, X_src
+
+    def save(self, file_dir, optimizer=None):
+        """保存模型和配置"""
+        save_data = {
+            'model_state_dict': self.state_dict(),
+            # 'config': self.config,
+            # 'config_dict': asdict(self.config)  # 用于JSON序列化
+        }
+
+        if optimizer:
+            save_data['optimizer_state_dict'] = optimizer.state_dict()
+
+        file_dir = Path(file_dir)
+        if not file_dir.exists():
+            file_dir.mkdir()
+
+        model_path = file_dir / 'model.pth'
+        config_path = file_dir / 'config.json'
+
+        torch.save(save_data, model_path)
+        self.config.save_json(config_path)
+
+    @classmethod
+    def load(cls, file_dir, device='cpu'):
+        """加载模型和配置, 可先加载至 CPU 再搬运到 GPU 设备"""
+
+        file_dir = Path(file_dir)
+        model_path = file_dir / 'model.pth'
+        config_path = file_dir / 'config.json'
+
+        data = torch.load(model_path, map_location=device, weights_only=False)
+
+        config = TransformerModelConfig.from_json(config_path)
+        model = cls(config)
+        model.load_state_dict(data['model_state_dict'])
+        model.to(device)
+
+        optimizer_state = None
+        if 'optimizer_state_dict' in data:
+            optimizer_state = data.get('optimizer_state_dict')
+
+        return model, config, optimizer_state
 
 
 if __name__ == "__main__":
-    config = TransformerConfig()
-    model = Transformer()
+    # create model
+    config = TransformerModelConfig(
+        src_vocab_size=100,
+        trg_vocab_size=200,
+        max_len=512,
+        dim=16,
+        heads=8,
+        num_layers=1,
+        position_encoding_base=10000.0,
+        src_pad_token_id=0,
+        trg_pad_token_id=0,
+    )
+
+    # compute model
+    model = Transformer(config)
     X = torch.randint(0, config.src_vocab_size, (2, 3), dtype=torch.long)
     Y = torch.randint(0, config.trg_vocab_size, (2, 7), dtype=torch.long)
     logits, _ = model(X, Y)
     print(logits.shape)
+    print(logits[0, 0, :10])
+
+    # save model
+    model.save(file_dir='./output/test_model_io')
+    del model
+
+    # load model
+    new_model, config, _ = Transformer.load(file_dir='./output/test_model_io')
+    print(config)
+    print(new_model)
+
+    # check model
+    logits, _ = new_model(X, Y)
+    print(logits[0, 0, :10])

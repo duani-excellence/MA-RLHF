@@ -10,21 +10,22 @@ EOS_TOKEN = "<EOS>"
 UNK_TOKEN = "<UNK>"
 IGNORE_INDEX = -100
 
-def token_pre_process(token_ids_list, 
-                      sos_token_id = None, 
-                      eos_token_id = None):
+
+def token_pre_process(token_ids_list,
+                      sos_token_id=None,
+                      eos_token_id=None):
     token_ids_pre_process = []
     for token_ids in token_ids_list:
         if sos_token_id is not None:
             token_ids = [sos_token_id] + token_ids
         if eos_token_id is not None:
-            token_ids = token_ids + [eos_token_id] 
+            token_ids = token_ids + [eos_token_id]
         token_ids_pre_process.append(token_ids)
     return token_ids_pre_process
 
-# def padding_max_length(input_ids, 
-#                        max_len = 32, 
-#                        pad_token_id = None, 
+# def padding_max_length(input_ids,
+#                        max_len = 32,
+#                        pad_token_id = None,
 #                        padding_side = 'RIGHT',
 #                       truction_side = 'RIGHT'):
 #     if pad_token_id is None:
@@ -51,3 +52,39 @@ def token_pre_process(token_ids_list,
 #             paddding_input_ids[i, -len(input_ids[i]):] = torch.tensor(input_ids[i], dtype = torch.long)
 
 #     return paddding_input_ids
+
+
+def get_src_mask(input_ids, pad_token_id=0):
+    bs, seq_len = input_ids.shape
+    mask = torch.ones(bs, seq_len, seq_len)
+    for i in range(bs):
+        pad_idx = torch.where(input_ids[i, :] == pad_token_id)[0]
+        mask[i, pad_idx, :] = 0
+        mask[i, :, pad_idx] = 0
+    return mask
+
+
+def get_trg_mask(input_ids, pad_token_id=0):
+    bs, seq_len = input_ids.shape
+    mask = torch.tril(torch.ones(bs, seq_len, seq_len))  # tril
+    for i in range(bs):
+        pad_idx = torch.where(input_ids[i, :] == pad_token_id)[0]
+        mask[i, pad_idx, :] = 0
+        mask[i, :, pad_idx] = 0
+    return mask
+
+
+def get_src_trg_mask(src_ids, trg_ids,
+                     src_pad_token_id=0,
+                     trg_pad_token_id=0
+                     ):
+    bs, src_seq_len = src_ids.shape
+    bs, trg_seq_len = trg_ids.shape
+
+    mask = torch.ones(bs, trg_seq_len, src_seq_len)  # tril
+    for i in range(bs):
+        src_pad_idx = torch.where(src_ids[i, :] == src_pad_token_id)[0]
+        trg_pad_idx = torch.where(trg_ids[i, :] == trg_pad_token_id)[0]
+        mask[i, trg_pad_idx, :] = 0
+        mask[i, :, src_pad_idx] = 0
+    return mask
