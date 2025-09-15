@@ -1,3 +1,5 @@
+# python train.py --learning_rate 1e-4 --epochs 1
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -71,8 +73,8 @@ if __name__ == "__main__":
 
     # create model
     config = TransformerModelConfig(
-        src_vocab_size=src_tokenizer.vocab_size,
-        trg_vocab_size=trg_tokenizer.vocab_size,
+        src_vocab_size=src_tokenizer.config.vocab_size,
+        trg_vocab_size=trg_tokenizer.config.vocab_size,
         max_len=512,
         dim=16,
         heads=8,
@@ -122,7 +124,7 @@ if __name__ == "__main__":
             bs, tmp_trg_len = label.shape
             label[torch.where(label == trg_tokenizer.vocab[PAD_TOKEN])
                   ] = IGNORE_INDEX
-            loss = loss_fn(logits.reshape(bs*tmp_trg_len, trg_tokenizer.vocab_size),
+            loss = loss_fn(logits.reshape(bs*tmp_trg_len, trg_tokenizer.config.vocab_size),
                            label.reshape(bs * tmp_trg_len))
 
             train_loss.append(loss.item())

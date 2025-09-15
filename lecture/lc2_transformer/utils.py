@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 import argparse
+import json
 torch.manual_seed(42)
 
 PAD_TOKEN = "<PAD>"
@@ -23,37 +24,6 @@ def token_pre_process(token_ids_list,
             token_ids = token_ids + [eos_token_id]
         token_ids_pre_process.append(token_ids)
     return token_ids_pre_process
-
-# def padding_max_length(input_ids,
-#                        max_len = 32,
-#                        pad_token_id = None,
-#                        padding_side = 'RIGHT',
-#                       truction_side = 'RIGHT'):
-#     if pad_token_id is None:
-#         return
-#     tokens_lens = [ len(ids) for ids in input_ids]
-#     tokens_lens = torch.tensor(tokens_lens, dtype = torch.long)
-#     tokens_max_len = torch.max(tokens_lens)
-
-#     # trunction
-#     if tokens_max_len > max_len:
-#         tokens_max_len = max_len
-#     if truction_side == 'RIGHT':
-#         input_ids = [ ids[ : min(len(ids), tokens_max_len)] for ids in input_ids]
-#     else:
-#         input_ids = [ ids[ -min(len(ids), tokens_max_len) : ] for ids in input_ids]
-
-#     # padding
-#     paddding_input_ids = torch.ones(len(input_ids), tokens_max_len, dtype = torch.long) * pad_token_id
-#     if padding_side == 'RIGHT':
-#         for i in range(len(input_ids)):
-#             paddding_input_ids[i, : len(input_ids[i])] = torch.tensor(input_ids[i], dtype = torch.long)
-#     else: # left padding
-#         for i in range(len(input_ids)):
-#             paddding_input_ids[i, -len(input_ids[i]):] = torch.tensor(input_ids[i], dtype = torch.long)
-
-#     return paddding_input_ids
-
 
 def get_src_mask(input_ids, pad_token_id=0):
     bs, seq_len = input_ids.shape
@@ -113,3 +83,10 @@ def get_argparse():
                         # required=True
                         )
     return parser
+
+
+def save_dict_to_json(filepath, data :dict = None):
+    """将字典保存为 JSON 文件"""
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+    print(f"字典已保存为 JSON 文件: {filepath}")

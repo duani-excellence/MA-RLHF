@@ -224,13 +224,6 @@ class Transformer(nn.Module):
     def __init__(self, config: TransformerModelConfig = None):
         super().__init__()
         self.config = config
-        # self.src_vocab_size = config.src_vocab_size
-        # self.dim = config.dim
-        # self.num_layers = config.num_layers
-        # self.heads = config.heads
-        # self.max_len = config.max_len
-        # self.src_pad_token_id = config.src_pad_token_id
-        # self.trg_pad_token_id = config.trg_pad_token_id
 
         self.encoder_input = TransformerInputLayer(vocab_size=self.config.src_vocab_size,
                                                    dim=self.config.dim,

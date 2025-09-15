@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     data = ['小冬瓜学大模型。',
             '注意力机制',
-            '批量解码']
+            '大语言模型能提高效率。']
 
     inputs = encode_batch(data, src_tokenizer)
     # print(inputs.shape)

@@ -7,14 +7,7 @@ import json
 import os
 
 from dataset import load_dataset, concat_all_text
-from utils import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN
-
-
-def save_dict_to_json(filepath, data):
-    """将字典保存为 JSON 文件"""
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-    print(f"字典已保存为 JSON 文件: {filepath}")
+from utils import PAD_TOKEN, SOS_TOKEN, EOS_TOKEN, UNK_TOKEN, save_dict_to_json
 
 
 @dataclass
@@ -37,40 +30,26 @@ class TokenizerBase:
     def __init__(self, config: TokenizerBaseConfig = None):
         self.vocab: Dict[str, int] = {}
         self.vocab_reverse: Dict[int, str] = {}
-        self.vocab_size: int = 0
-        self.special_token: Dict[str, int] = {}
         self.config = config
 
-        special_tokens = [SOS_TOKEN, EOS_TOKEN, PAD_TOKEN, UNK_TOKEN]
-        zh_symbols = '，。！？；：“”‘’【】（）《》、'
-        en_symbols = re.escape(string.punctuation)
-        all_symbols = zh_symbols + en_symbols + ' '
+        if config is None:
+            self.config = TokenizerBaseConfig()
+            special_tokens = [self.config.sos_token,
+                              self.config.eos_token,
+                              self.config.pad_token,
+                              self.config.unk_token,]
+            zh_symbols = '，。！？；：“”‘’【】（）《》、'
+            en_symbols = re.escape(string.punctuation)
+            all_symbols = zh_symbols + en_symbols + ' '
 
-        self.pattern = (
-            r'(?:' + '|'.join(special_tokens) + ')'
-            r'|[' + re.escape(all_symbols) + ']'
-            r'|\d'
-            r'|[\u4e00-\u9fa5]'
-            r'|[^' + re.escape(all_symbols) + r'\d\u4e00-\u9fa5<>]+'
-        )
+            self.config.pattern = (
+                r'(?:' + '|'.join(special_tokens) + ')'
+                r'|[' + re.escape(all_symbols) + ']'
+                r'|\d'
+                r'|[\u4e00-\u9fa5]'
+                r'|[^' + re.escape(all_symbols) + r'\d\u4e00-\u9fa5<>]+'
+            )
 
-        if config is not None:
-            self.init_config(config)
-
-    def init_config(self, config):
-        self.pattern = self.config.pattern
-        for value in self.vocab:
-            self.vocab_reverse[self.vocab[value]] = value
-        self.vocab_size = self.config.vocab_size
-
-    # @abstractmethod
-
-    def init_vocab(self, vocab: Dict[str, int]):
-        """
-        初始化词表, 可以用现成的字典, 也可以默认使用基础字符来创建
-        """
-
-    # @abstractmethod
     def train(self, text: Union[str, List[str]]):
         """
         输入语料
@@ -82,8 +61,8 @@ class TokenizerBase:
          <SOS> <EOS> <UNK> <PAD> 
          , 。 ！？；：“”‘’【】（）《》、!"\#\$%\&'\(\)\*\+,\-\./:;<=>\?@\[\\\]\^_`\{\|\}\~ 
         """
-        token_init_list = re.findall(self.pattern, text_init)
-        token_corpus_list = re.findall(self.pattern, text)
+        token_init_list = re.findall(self.config.pattern, text_init)
+        token_corpus_list = re.findall(self.config.pattern, text)
 
         token_all = token_init_list + token_corpus_list
 
@@ -93,11 +72,7 @@ class TokenizerBase:
                 self.vocab[value] = idx
                 self.vocab_reverse[idx] = value
                 idx += 1
-        self.vocab_size = len(self.vocab)
-
-        # for token, id in enumerate(self.special_token):
-        #     if token in self.vocab:
-        #         self.special_token[token] = self.vocab[token]
+        self.config.vocab_size = len(self.vocab)
 
     # @abstractmethod
 
@@ -121,7 +96,7 @@ class TokenizerBase:
         token_list = []
         token_ids_list = []
         for input_text in input_list:
-            tokens = re.findall(self.pattern, input_text)  # 分词规则
+            tokens = re.findall(self.config.pattern, input_text)  # 分词规则
             token_ids = []
             for token in tokens:
                 if token in self.vocab:
@@ -167,18 +142,16 @@ class TokenizerBase:
         if 'class_name' in config:
             cls = globals()[config['class_name']]  # 获取类对象
             self.config = cls(**config)
-            # print(self.config)
         else:
             print('not specified tokenizer class name')
 
         if os.path.isfile(vocab_path):
             with open(vocab_path, encoding='utf-8') as f:
                 self.vocab = json.load(f)  # loads 返回 dict
-                # print('加载成功：')
+                for value in self.vocab:
+                    self.vocab_reverse[self.vocab[value]] = value
         else:
             print(f'[错误] 文件不存在：{vocab_path}')
-
-        self.init_config(config)
 
         return
 
@@ -195,26 +168,24 @@ class TokenizerBase:
             print(f"目录 '{filepath}' 已存在")
             # return False
 
+        config_dict = {
+            'vocab_size': len(self.vocab),
+            'class_name': 'TokenizerBaseConfig',
+            'sos_token': SOS_TOKEN,
+            'sos_token_id': self.vocab[SOS_TOKEN],
+            'eos_token': EOS_TOKEN,
+            'eos_token_id': self.vocab[EOS_TOKEN],
+            'pad_token': PAD_TOKEN,
+            'pad_token_id': self.vocab[PAD_TOKEN],
+            'unk_token': UNK_TOKEN,
+            'unk_token_id': self.vocab[UNK_TOKEN],
+            'pattern': self.config.pattern,
+        }
+        self.config = TokenizerBaseConfig(**config_dict)
+        config_dict = asdict(self.config)
+
         vocab_path = os.path.join(filepath, 'vocab.json')
         config_path = os.path.join(filepath, 'config.json')
-
-        if self.config is None:
-            config_dict = {
-                'vocab_size': len(self.vocab),
-                'class_name': 'TokenizerBaseConfig',
-                'sos_token': SOS_TOKEN,
-                'sos_token_id': self.vocab[SOS_TOKEN],
-                'eos_token': EOS_TOKEN,
-                'eos_token_id': self.vocab[EOS_TOKEN],
-                'pad_token': PAD_TOKEN,
-                'pad_token_id': self.vocab[PAD_TOKEN],
-                'unk_token': UNK_TOKEN,
-                'unk_token_id': self.vocab[UNK_TOKEN],
-                'pattern': self.pattern,
-            }
-
-            self.config = TokenizerBaseConfig(**config_dict)
-        config_dict = asdict(self.config)
         save_dict_to_json(config_path, config_dict)
         save_dict_to_json(vocab_path, self.vocab)
 
@@ -250,7 +221,7 @@ def test():
     print('[loading]....')
     tokenizer = TokenizerBase()
     tokenizer.from_pretrained('./output')
-    print(tokenizer.vocab_size)
+    print(tokenizer.config.vocab_size)
     print(tokenizer.config)
 
     # encode
@@ -284,9 +255,9 @@ if __name__ == "__main__":
     tokenizer_en = TokenizerBase()
     tokenizer_en.train(text_en)
     tokenizer_en.save_tokenizer('./output/tokenizer_en')
-    print('English Vocab Size:', tokenizer_en.vocab_size)
+    print('English Vocab Size:', tokenizer_en.config.vocab_size)
 
     tokenizer_zh = TokenizerBase()
     tokenizer_zh.train(text_zh)
     tokenizer_zh.save_tokenizer('./output/tokenizer_zh')
-    print('Chinese Vocab Size:', tokenizer_zh.vocab_size)
+    print('Chinese Vocab Size:', tokenizer_zh.config.vocab_size)
