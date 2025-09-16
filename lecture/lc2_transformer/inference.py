@@ -11,7 +11,6 @@ torch.manual_seed(42)
 
 
 def encode_batch(data, tokenizer):
-
     N = len(data)
     _, input_list = tokenizer.encode(data)
     max_len = max(len(input_ids) for input_ids in input_list)
@@ -21,7 +20,6 @@ def encode_batch(data, tokenizer):
     for i, input_id in enumerate(input_list):
         input_ids[i, -len(input_id):] = torch.tensor(input_id,
                                                      dtype=torch.long)
-
     return input_ids
 
 
@@ -34,6 +32,7 @@ def generate(model,
     N, seq_len = inputs.shape
     Y = torch.ones(N, 1, dtype=torch.long) * trg_tokenizer.vocab[SOS_TOKEN]
     for i in range(max_new_tokens):
+        # Inference Stage, only one-encoder forward, and multi-step decode
         logits, prob, src_mask, X_src = model(inputs, Y, src_mask, X_src)
         # logits = logits[:, -1, :]
         # prob = F.softmax(logits, dim=-1)
