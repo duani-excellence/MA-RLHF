@@ -22,7 +22,7 @@
 |      | `Transformer_Framework.ipynb` | 从序列建模角度实现 Encoder-Decoder 机器翻译，配备训练和推理极简代码 | ✅    |
 |      | `Transformer_Attention.ipynb` | 序列语言模型的具体实现：注意力机制。语言模型学习 token 在上下文中的表示，从而刻画完整的语义信息。额外增加 手撕注意力 backward。 | ✅🌟   |
 |      | `Position_Encoding.ipynb`     | TODO                                                         |      |
-|      | `LayerNorm.ipynb`             | TODO                                                         |      |
+|      | `LayerNorm.ipynb`             | 算法原理、可视化、反向                                       | ✅    |
 |      | `Transformer.ipynb`           | 完整的 Transformer 模型                                      | ✅🌟   |
 |      | `Load_Dataset.ipynb`          | 从 huggingface 加载一个 机器翻译数据集 `wmt/wmt19` , 并存储成 `./data.json`。数据集会用于实际训练实践中。如无法拉取可以先跳过。 |      |
 |      | `Dataset.ipynb`               | 将数据集封装成 `Dataset`, 并配套实现 `DataLoader`、`DataCollate` , 用于 batch 加载。 接口参考 `Transformer` 库，实现 mask, padding, label 等的处理技巧 | ✅    |
@@ -48,3 +48,27 @@
 | `train.py`     | 加载 `tokenizer`, `dataset` ，并初始化一个 Transformer 模型进行训练，在训练中用交叉熵损失，手写训练流程。TODO：训练曲线绘制。 | ✅🌟   |
 | `inference.py` | 加载已训练好的模型，用于推理预测。即中英翻译测试。           | ✅🌟   |
 
+## 训练实践
+
+首先数据可以从 huggingface 拉取，并保存成 `./data.json`, 本目录下已有现成数据，受网络环境影响无法拉取，则可以跳过。
+
+```bash
+Load_Dataset.ipynb # optional
+```
+
+按照以下顺序, 可以完成 分词器 和 Transformer的训练和推理实践
+
+```bash
+python tokenizer.py
+python train.py --learning_rate 1e-4 --epochs 1
+python inference.py
+```
+
+## 扩展知识点
+
+- attention score 除于 sqrt(d)
+- softmax + cross-entropy forward & backward
+- adam
+- auto-grad
+- mlp backward
+- multi-head attention backward
