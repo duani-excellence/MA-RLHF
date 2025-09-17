@@ -1,6 +1,6 @@
 # Trasformer
 
-本 Notebook 从零写 Transformer 训练。
+本节内容从零写 Transformer 训练。
 
 - 实现基础的 Transformer 训练
 - 掌握配套组件 Dataset、Tokenizer、IO、config 等实现细节。 以帮助更好理解主流框架的实现思路。
@@ -21,7 +21,7 @@
 | ---- | ----------------------------- | ------------------------------------------------------------ | ---- |
 |      | `Transformer_Framework.ipynb` | 从序列建模角度实现 Encoder-Decoder 机器翻译，配备训练和推理极简代码 | ✅    |
 |      | `Transformer_Attention.ipynb` | 序列语言模型的具体实现：注意力机制。语言模型学习 token 在上下文中的表示，从而刻画完整的语义信息。额外增加 手撕注意力 backward。 | ✅🌟   |
-|      | `Position_Encoding.ipynb`     | TODO                                                         |      |
+|      | `Position_Encoding.ipynb`     | 代码实现和分析                                                         |  ✅🌟   |
 |      | `LayerNorm.ipynb`             | 算法原理、可视化、反向                                       | ✅    |
 |      | `Transformer.ipynb`           | 完整的 Transformer 模型                                      | ✅🌟   |
 |      | `Load_Dataset.ipynb`          | 从 huggingface 加载一个 机器翻译数据集 `wmt/wmt19` , 并存储成 `./data.json`。数据集会用于实际训练实践中。如无法拉取可以先跳过。 |      |
