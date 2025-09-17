@@ -156,7 +156,7 @@ class TokenizerBase:
         return
 
     @abstractmethod
-    def save_tokenizer(self, filepath: str = './tokenizer'):
+    def save_pretrained(self, filepath: str = './tokenizer'):
         """
         保存 tokenizer, 包含词表, 分词规则, config
         config 保存 分词器 类名, 分词器保存规则 
@@ -213,7 +213,7 @@ def test():
     # save
     print('-'*100)
     print('[saving]....')
-    tokenizer.save_tokenizer('./output')
+    tokenizer.save_pretrained('./output')
     del tokenizer
 
     # load
@@ -254,10 +254,10 @@ if __name__ == "__main__":
 
     tokenizer_en = TokenizerBase()
     tokenizer_en.train(text_en)
-    tokenizer_en.save_tokenizer('./output/tokenizer_en')
+    tokenizer_en.save_pretrained('./output/tokenizer_en')
     print('English Vocab Size:', tokenizer_en.config.vocab_size)
 
     tokenizer_zh = TokenizerBase()
     tokenizer_zh.train(text_zh)
-    tokenizer_zh.save_tokenizer('./output/tokenizer_zh')
+    tokenizer_zh.save_pretrained('./output/tokenizer_zh')
     print('Chinese Vocab Size:', tokenizer_zh.config.vocab_size)

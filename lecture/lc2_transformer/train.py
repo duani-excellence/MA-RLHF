@@ -148,6 +148,6 @@ if __name__ == "__main__":
     # evaluation
 
     # save_pretrained
-    model.save(args.output_path)
-    src_tokenizer.save_tokenizer(args.output_path + '/tokenizer_zh')
-    trg_tokenizer.save_tokenizer(args.output_path + '/tokenizer_en')
+    model.save_pretrained(args.output_path)
+    src_tokenizer.save_pretrained(args.output_path + '/tokenizer_zh')
+    trg_tokenizer.save_pretrained(args.output_path + '/tokenizer_en')

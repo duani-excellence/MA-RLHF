@@ -11,7 +11,7 @@ class TransformerModelConfig:
     dim: int = 512
     heads: int = 8
     num_layers: int = 6
-    position_encoding_base: int = 10000.0
+    position_encoding_base: float = 10000.0
     src_pad_token_id: int = 0
     trg_pad_token_id: int = 0
     # custom_objects: dict = field(default_factory=dict)

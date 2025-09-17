@@ -52,7 +52,7 @@ if __name__ == "__main__":
     trg_tokenizer.from_pretrained('./output/transformer/tokenizer_en')
 
     # create model
-    model, _, _ = Transformer.load('./output/transformer/')
+    model, _, _ = Transformer.from_pretrained('./output/transformer/')
 
     data = ['小冬瓜学大模型。',
             '注意力机制',

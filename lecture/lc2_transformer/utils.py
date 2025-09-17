@@ -25,6 +25,7 @@ def token_pre_process(token_ids_list,
         token_ids_pre_process.append(token_ids)
     return token_ids_pre_process
 
+
 def get_src_mask(input_ids, pad_token_id=0):
     bs, seq_len = input_ids.shape
     mask = torch.ones(bs, seq_len, seq_len)
@@ -85,7 +86,7 @@ def get_argparse():
     return parser
 
 
-def save_dict_to_json(filepath, data :dict = None):
+def save_dict_to_json(filepath, data: dict = None):
     """将字典保存为 JSON 文件"""
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)

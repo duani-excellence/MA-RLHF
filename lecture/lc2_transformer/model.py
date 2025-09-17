@@ -269,7 +269,7 @@ class Transformer(nn.Module):
 
         return logits, prob, src_mask, X_src
 
-    def save(self, file_dir, optimizer=None):
+    def save_pretrained(self, file_dir, optimizer=None):
         """保存模型和配置"""
         save_data = {
             'model_state_dict': self.state_dict(),
@@ -291,7 +291,7 @@ class Transformer(nn.Module):
         self.config.save_json(config_path)
 
     @classmethod
-    def load(cls, file_dir, device='cpu'):
+    def from_pretrained(cls, file_dir, device='cpu'):
         """加载模型和配置, 可先加载至 CPU 再搬运到 GPU 设备"""
 
         file_dir = Path(file_dir)
