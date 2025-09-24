@@ -122,7 +122,7 @@ class TransformerEncoderBlock(nn.Module):
         self.ln2 = LayerNorm(dim)
 
     def forward(self, X, src_mask=None):
-        X_attn = self.attn(X, X, X)
+        X_attn = self.attn(X, X, X, mask = src_mask)
         X_ln = self.ln1(X_attn)
         X = X + X_ln
 
