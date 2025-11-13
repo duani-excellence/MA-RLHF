@@ -1,12 +1,20 @@
-1. full finetuning
-2. LoRA finetune
-3. QLoRA finetune
-4. Instruction finetune
-5. prompt engineering
-6. CoT
-7. alpaca
-8. embedding
-9. RAG
-10. agent ReAct
-11. benchmark evaluation
-12. llm as a judge
+## SFT 微调
+1. Instruction finetune
+2. SFT Dataset
+3. full finetuning
+4. LoRA finetune
+5. QLoRA finetune
+
+## 提示词工程
+6. prompt engineering
+7. CoT
+8. alpaca
+
+## 外部能力
+9. embedding
+10. RAG
+11. agent ReAct
+
+## 测评
+12. benchmark evaluation
+13. llm as a judge
