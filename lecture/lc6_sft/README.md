@@ -1,10 +1,12 @@
 ## SFT 微调
 
-1. Instruction finetune
-2. SFT Dataset 
-3. full finetuning
-4. LoRA finetune
-5. QLoRA finetune
+微调基于 Qwen3 预训练模型, Alpaca 数据集
+
+2. SFT Dataset: `Supervised_Finetuning_Dataset.ipynb`
+3. full finetuning PyTorch: `Supervised_Finetuning_PyTorch.ipynb`
+4. full finetuning Huggingface: `Supervised_FineTuning_transformers_Qwen3.ipynb`
+5. LoRA finetune
+6. QLoRA finetune
 
 ## 提示词工程
 
