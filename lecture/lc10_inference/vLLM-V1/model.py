@@ -17,6 +17,46 @@ class PageAttentionBlock(nn.Module):
         self.WV = nn.Linear(config.dim, config.dim, bias=False)
         self.WO = nn.Linear(config.dim, config.dim, bias=False)
         self.act = nn.ReLU()
+    
+    def forward(self,
+                        X,
+                        attention_mask=None,  # Attention mask 也是 page 型的
+                        request_num_pages: List[int] = [],
+                        request_length=None,
+                        KV_Cache=[],
+                        info=None,
+                        ):
+        # Prefill
+        B, T, _ = X.shape
+        H = self.num_heads
+        D = self.head_dim
+
+        Q, K, V = self.WQ(X), self.WK(X), self.WV(X)
+        Q = Q.reshape(B, T, H, D).transpose(1, 2)
+        K = K.reshape(B, T, H, D).transpose(1, 2)
+        V = V.reshape(B, T, H, D).transpose(1, 2)
+        O = torch.zeros_like(Q)
+
+        request_size = len(request_num_pages)
+        offset = [0] * request_size
+        for i in range(1, request_size):
+            offset[i] = offset[i-1] + request_num_pages[i]
+
+        for t in range(request_size):  # Request Loop
+            offset_i = offset[t]
+            N = request_num_pages[t]
+            Q_ = Q[offset_i: offset_i+N]
+            K_ = K[offset_i: offset_i+N]
+            V_ = V[offset_i: offset_i+N]
+
+            O_ = page_attention_prefill_kernel(Q_, K_, V_, mask=attention_mask)
+            O[offset_i: offset_i+N] = O_
+
+        O = O.transpose(1, 2).reshape(B, T, H*D)
+        O = self.WO(O)
+        O = X + self.act(O)
+
+        return O, [K.transpose(1, 2), V.transpose(1, 2)]
 
     def forward_prefill(self,
                         X,
@@ -128,20 +168,23 @@ class PageToyModel(nn.Module):
             [PageAttentionBlock(config) for i in range(config.num_layers)]
         )
 
-    def forward(self, x, kvcaches=None, current_length=None, request_num_pages=None):
+    def forward(self, x, 
+                kvcaches:List[torch.Tensor],
+                current_length=None, 
+                request_num_pages=None,
+                info=None):
         layer_kvcaches = []
         X = self.embd(x)
 
         for i, block in enumerate(self.decoder):
-            if kvcaches == None:
-                X, layer_kvcache = block.forward_prefill(
-                    X, request_num_pages=request_num_pages)
-            else:
-                X, layer_kvcache = block.forward_decoding(X,
-                                                          KV_Cache=[kvcaches[0][i],
-                                                                    kvcaches[1][i]],
-                                                          request_length=current_length,
-                                                          request_num_pages=request_num_pages)
+
+            tmp_kvcaches = [ kvcache[i] for kvcache in kvcaches]
+
+            X, layer_kvcache = block.forward(X, 
+                                             KV_Cache=tmp_kvcaches, 
+                                             request_length=current_length,
+                                             request_num_pages=request_num_pages,
+                                             info=info)
 
             layer_kvcaches.append(layer_kvcache)
         logits = self.lm_head(X)

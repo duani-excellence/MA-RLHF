@@ -6,10 +6,11 @@ from typing import Dict, List, Set, Tuple, Optional, Any
 
 from .model import PageToyModel
 from .kvcache import PageKVCacheEngine
-from .schedular import Schedular
+from .scheduler import Scheduler, SchedulerInfo
 from .wrapper import ModelWrapper
 
 torch.manual_seed(42)
+
 
 class vLLMEngine:
     """vLLM 主引擎"""
@@ -17,89 +18,66 @@ class vLLMEngine:
     def __init__(self, model, config):
         self.cacher = PageKVCacheEngine(config)
         self.model_wrapper = ModelWrapper(model, self.cacher)
-        self.schedular = Schedular(config.max_seq_len,)
+        self.scheduler = Scheduler(config.max_seq_len,)
+        self.num_pages = config.num_pages
 
     def add_request(self, prompt: List[int], max_seq_len) -> int:
         """添加新请求"""
-        return self.schedular.add_request(prompt, max_seq_len)
+        return self.scheduler.add_request(prompt, max_seq_len)
+
+    def get_merge_batch(self, info: SchedulerInfo):
+        # 1 x seq_len
+        input_ids = torch.tensor([info.merge_prompt], dtype=torch.long)
+        return input_ids
+
+    def update(self,):
+        pass
+
+    def execute(self, input_ids: torch.Tensor, 
+                kv_cache: List[torch.Tensor], 
+                kv_page_len: List[int],
+                info: SchedulerInfo):
+        logits, KV = self.model_wrapper.forward(input_ids,
+                                                kv_cache,
+                                                info)
+        
+        next_token = torch.argmax(logits)
+
+        return next_token, KV
 
     def step(self):
         """
+        step 函数, 采用 chunked-prefill 方式融合 P/D batch
+        1. 获取融合batch
+        2. 计算
+        3. 生成 next token
+        4. 更新状态/KVCache
+
+        :param self: 说明
         """
-        request_ids = None
-        layer_kvcaches = None
-        # 阶段1: 处理解码(已有请求)
-        if self.schedular.get_num_running_requests() > 0:
+        if self.scheduler.get_available_request() == 0:
+            return
 
-            request_ids = self.schedular.get_running_request_ids()
+        # 获取 batch
+        info = self.scheduler.get_requests()
+        kv_cache, info.kv_page_len = self.cacher.get_kv_cache(info.ids)
+        input_ids, = self.get_merge_batch(info)
 
-            # 准备输入token (上一个 step 生成的token)
-            input_tokens = torch.tensor([
-                self.schedular.requests[req_id].generated_tokens[-1]
-                for req_id in request_ids
-            ], dtype=torch.long)
-            current_length = torch.tensor([
-                self.schedular.requests[req_id].current_length
-                for req_id in request_ids
-            ], dtype=torch.long)
-            input_tokens = input_tokens.unsqueeze(dim=1)
+        # 执行计算
+        next_token = self.execute(input_ids, kv_cache, info)
 
-            # Page KVCache -> Batch KVCache
-            # batch_kvcache = self.cacher.get_sequence_kvcache(request_ids)
-            batch_kvcache, num_pages_len, batch_to_page = self.cacher.get_page_kvcache(
-                request_ids)
+        # 更新 requests 信息, 更新 KVCache
+        self.update()
 
-            # 解码
-            logits, layer_kvcaches = self.model_wrapper.decode_next_tokens(input_tokens,
-                                                                           KVCache=batch_kvcache,
-                                                                           num_pages_len=num_pages_len,
-                                                                           current_length=current_length)
-            next_tokens = self.model_wrapper.generate_next_tokens(logits)
+        return 
 
-            # update kv cache
-            self.update_kvcache(request_ids, layer_kvcaches)
-
-            # 更新状态
-            for i, request_id in enumerate(request_ids):
-                self.schedular.update_request(
-                    request_id, next_tokens[i].item())
-                if self.schedular.requests[request_id].is_finished():
-                    self.cacher.free_request_pages(request_id)
-
-        # 阶段2: 处理预填充(新请求)
-        if self.schedular.get_num_pending_requests() > 0:
-            pending_requests = self.schedular.get_pending_requests(
-                config.num_pages
-            )
-            request_ids = [idx for idx, _ in pending_requests]
-            prompts = [prompt for _, prompt in pending_requests]
-
-            if pending_requests:
-                logits, layer_kvcaches, request_page_ids = self.model_wrapper.prefill_requests(
-                    request_ids, prompts)
-                next_tokens = self.model_wrapper.generate_next_tokens(logits)
-                for i, (request_id, _) in enumerate(pending_requests):
-                    self.schedular.update_request(
-                        request_id,
-                        next_tokens[i].item()
-                    )
-
-                self.update_kvcache(
-                    request_ids, layer_kvcaches, request_page_ids)
-
-    def update_kvcache(self, request_ids, layer_kvcaches, request_page_ids=None):
-        if request_ids != None:
-            for i, idx in enumerate(request_ids):
-                tmp_cache = [[layer_kvcache[0][i], layer_kvcache[1][i]]
-                             for layer_kvcache in layer_kvcaches]
-                self.cacher.update_pages(idx, tmp_cache)
 
     def has_pending_work(self) -> bool:
         """检查是否还有未完成的工作"""
-        return self.schedular.has_pending_requests()
+        return self.scheduler.has_pending_requests()
 
     def get_requests_info(self):
-        pending = self.schedular.get_num_pending_requests()
-        running = self.schedular.get_num_running_requests()
-        total_request = len(self.schedular.requests)
+        pending = self.scheduler.get_num_pending_requests()
+        running = self.scheduler.get_num_running_requests()
+        total_request = len(self.scheduler.requests)
         return pending, running, total_request
