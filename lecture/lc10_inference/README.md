@@ -19,16 +19,16 @@
 3. 设计一个 P/D 分离系统，分析 PD 节点之间的 KV传播，增加吞吐的 Latency 是必然的吗？
 4. 分析 DeepSeek-V3 Inference 方案，计算推理成本（涉及硬件）
 
-| 文件名                    | 介绍                                                         | 必读 |
-| ------------------------- | ------------------------------------------------------------ | ---- |
-| `FlashAttention`          | 在 notebook 目录待整理                                       | ✅🌟   |
-| `Continue_Batching.ipynb` | 实现最小的动态批服务，已解决在线随机请求时，高batch-decoding效率，从而提升吞吐率 | ✅🌟   |
-| `vLLM-PageKVCache.ipynb`  | 解决ContinueBatching中的 KVCache 管理问题，设计分页KVCache系统来提高 Cache 利用率。 |     |
-| `vLLM-PageAttention.ipynb`  | 设计 PageAttention Kernel(较难) |     |
-| `vLLM-V0.ipynb`  | 带 PageKVCache 与 vLLM-PageAttention 实现 |     |
-| `Chunked-Prefill.ipynb` |   实现 proj 搭便车和 PD batch 混合计算, 为 vLLM-V1  实现打下基础                                       |      |
-| `vLLM-V1.ipynb`| TODO: PD-Merge in everystep                                   |      |
-|                           | TODO: PD-Disggreation                                        |      |
-|                           | TODO: Speculative Decoding                                   |      |
-|                           | TODO:                                                        |      |
+| 文件名                     | 介绍                                                                                | 必读 |
+| -------------------------- | ----------------------------------------------------------------------------------- | ---- |
+| `FlashAttention`           | 在 notebook 目录待整理                                                              | ✅🌟   |
+| `Continue_Batching.ipynb`  | 实现最小的动态批服务，已解决在线随机请求时，高batch-decoding效率，从而提升吞吐率    | ✅🌟   |
+| `vLLM-PageKVCache.ipynb`   | 解决ContinueBatching中的 KVCache 管理问题，设计分页KVCache系统来提高 Cache 利用率。 |      |
+| `vLLM-PageAttention.ipynb` | 设计 PageAttention Kernel(较难)                                                     |      |
+| `vLLM-V0.ipynb`            | 带 PageKVCache 与 vLLM-PageAttention 实现                                           |      |
+| `Chunked-Prefill.ipynb`    | 实现 proj 搭便车和 PD batch 混合计算, 为 vLLM-V1  实现打下基础                      |      |
+| `vLLM-V1.ipynb`            | 完成, 实现chunked prefill + PageAttention kernel                                    |      |
+|                            | TODO: PD-Disggreation                                                               |      |
+|                            | TODO: Speculative Decoding                                                          |      |
+|                            | TODO:                                                                               |      |
 
