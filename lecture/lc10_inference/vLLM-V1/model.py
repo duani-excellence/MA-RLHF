@@ -161,11 +161,8 @@ class PageAttentionBlock(nn.Module):
 
         # step3: block attenion,request-level KVCache
         Q_ = q_[:, :, None, :]  # num_page, h, 1, d
-        K_, V_ = KV_Cache[0].transpose(1, 2), KV_Cache[1].transpose(
-            1, 2)  # num_page, h, page_size, d
-        Qshape = Q_.shape
-        Kshape = K_.shape
-        Vshape = V_.shape
+        K_ = KV_Cache[0].transpose(1, 2)
+        V_ = KV_Cache[1].transpose(1, 2)  # num_page, h, page_size, d
         S = Q_ @ K_.transpose(2, 3)
         # TODO: Mask
         M, _ = torch.max(S, dim=-1, keepdim=True)
@@ -189,6 +186,7 @@ class PageAttentionBlock(nn.Module):
             offset += T
 
         O = globle_O.transpose(1, 2).reshape(B, H*D)
+        O = self.WO(O)
 
         return O
 

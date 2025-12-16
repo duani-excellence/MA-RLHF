@@ -106,6 +106,10 @@ class PageKVCacheEngine:
                                   target_pos_start:target_pos_end, :, :] = KV[:, :, T-new_len:]
                     new_len = 0
                 else:  # 现有页面不足够保存新 KV
+                    target_page_id = page_ids[-1]
+                    target_pos_start = self.page_size - page_avaliable_len
+                    # target_pos_end = target_pos_start + new_len
+
                     self.kv_cache[:, :, target_page_id, target_pos_start:, :,
                                   :] = KV[:, :, T-new_len: T-new_len+page_avaliable_len]
 

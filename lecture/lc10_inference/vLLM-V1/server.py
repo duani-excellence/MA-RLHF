@@ -4,6 +4,8 @@ from engine import vLLMEngine
 
 import torch
 import random
+torch.manual_seed(42)
+random.seed(42)
 
 
 def listen_request(config, p=0.01):
@@ -19,33 +21,32 @@ def listen_request(config, p=0.01):
     return prompt, prompt_len
 
 
-# if __name__ == '__main__:':
-
-N = 32
+N = 64
 count = 0
 
 config = vLLMEngineConfig()
 model = PageToyModel(config)
 engine = vLLMEngine(model, config)
 
-
-# main
 while 1:
-    # 监听进程
-    if count != N:
-        prompt, prompt_len = listen_request(config, p=0.5)
-        if prompt_len != 0:
-            count += 1
-            if count % (N//10) == 0:
-                per = count / (N//10)
-                print('Running...:', '*'*int(per), '-'*(10-int(per)))
-            generate_len = random.randint(prompt_len, config.max_seq_len)
-            engine.add_request(prompt, generate_len)
+    # 监听进程, 可能获取多条请求
+    # if count != N:
+    if count <= N:
+        for i in range(5):  # 最多获取 5 条数据:
+            prompt, prompt_len = listen_request(config, p=0.4)
+            if prompt_len != 0:
+                count += 1
+                if count % (N//10) == 0:
+                    per = count / (N//10)
+                    print('Running...:', '*'*int(per), '-'*(10-int(per)))
+                generate_len = random.randint(
+                    config.max_new_tokens//4, config.max_new_tokens)
+                engine.add_request(prompt, generate_len)
 
     # 处理进程
     with torch.no_grad():
-        engine.step()
+        engine.step(config=config)
 
-    if not engine.has_pending_work() and count == N:
+    if not engine.has_pending_work() and count > N:
         print('process done', count)
         break

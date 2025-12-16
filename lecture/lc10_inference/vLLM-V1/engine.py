@@ -4,10 +4,11 @@ import torch.nn.functional as F
 
 from typing import Dict, List, Set, Tuple, Optional, Any
 
-from model import PageToyModel
+# from model import PageToyModel
 from kvcache import PageKVCacheEngine
 from scheduler import Scheduler, SchedulerInfo
 from wrapper import ModelWrapper
+from config import vLLMEngineConfig
 
 torch.manual_seed(42)
 
@@ -40,15 +41,18 @@ class vLLMEngine:
             req_id = info.ids[bid]
             if token != -1:
                 # self.scheduler.requests[req_id].add_token(token)
-                self.scheduler.update_request(req_id, token)
+                self.scheduler.update_request(req_id, token.item())
 
         reqs_KV = KV.split(info.chunk_len, dim=2)
         for req_id, tmp_KV in zip(info.ids, reqs_KV):
             if self.scheduler.requests[req_id].status == "REQUEST_COMPLETED":
                 self.cacher.free(req_id)
             else:
-                new_kv_len = self.cacher.update_kv_cache(req_id, tmp_KV)
-                self.scheduler.requests[req_id].kv_len = new_kv_len
+                self.cacher.update_kv_cache(req_id, tmp_KV)
+
+        # 更新kv len
+        for i, req_id in enumerate(info.ids):
+            self.scheduler.requests[req_id].kv_len += info.chunk_len[i]
 
             # self.scheduler.update_request()
 
@@ -79,7 +83,7 @@ class vLLMEngine:
 
         return tokens, KV
 
-    def step(self):
+    def step(self, config: vLLMEngineConfig):
         """
         step 函数, 采用 chunked-prefill 方式融合 P/D batch
         1. 获取融合batch
@@ -93,8 +97,12 @@ class vLLMEngine:
             return
 
         # 获取 batch
-        info = self.scheduler.get_requests()
+        info = self.scheduler.get_requests(
+            max_batch_tokens=config.max_batch_tokens,
+            max_prefill_batch=config.max_prefill_batch,
+            max_decoding_batch=config.max_decoding_batch)
         print(f'batch_info: P{info.prefill_batch}, D{info.decoding_batch}')
+
         kv_cache, info.kv_page_len = self.cacher.get_kv_cache(info.ids)
         input_ids, = self.get_merge_batch(info)
 

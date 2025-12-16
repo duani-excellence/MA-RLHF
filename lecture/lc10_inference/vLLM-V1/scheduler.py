@@ -67,11 +67,13 @@ class Scheduler:
         count_batch_token = 0
         for i in self.running_requests:
             # decoding batching
-            if self.requests[i].is_decoding():
+            req = self.requests[i]
+            if req.is_decoding():
                 info.ids.append(i)
                 info.chunk_prompts.append(
-                    [self.requests[i].generated_tokens[-1]])
-                info.kv_len.append(self.requests[i].kv_len)
+                    [req.generated_tokens[-1]]
+                )
+                info.kv_len.append(req.kv_len)
                 info.last_pos.append(0)
 
                 info.chunk_idx.append(count_batch_token)
@@ -95,19 +97,19 @@ class Scheduler:
 
             avalable_tokens = max_batch_tokens - count_batch_token
             start = req.kv_len
-            if len(req.prompt) <= avalable_tokens:
+            if len(req.prompt[start:]) <= avalable_tokens:
+                # 当前请求数据可以prefill
                 info.chunk_prompts.append(req.prompt[start:])
-                count_batch_token += len(req.prompt)
                 info.last_pos.append(len(req.prompt[start:])-1)
 
                 info.chunk_idx.append(count_batch_token)
-                info.chunk_len.append(len(req.prompt))
-                count_batch_token += len(req.prompt)
+                info.chunk_len.append(len(req.prompt[start:]))
+                count_batch_token += len(req.prompt[start:])
 
             else:
-                # 切片数据
+                # 当前请求数据可以chunked-prefill
                 info.chunk_prompts.append(
-                    self.requests[i].prompt[start: start+avalable_tokens])
+                    req.prompt[start: start+avalable_tokens])
                 info.last_pos.append(-1)
 
                 info.chunk_idx.append(count_batch_token)
@@ -115,10 +117,10 @@ class Scheduler:
                 count_batch_token += avalable_tokens
 
             info.is_decoding.append(False)
-
             prefill_batch_count += 1
             info.prefill_batch = prefill_batch_count
-            if prefill_batch_count == max_prefill_batch or count_batch_token == max_batch_tokens:
+
+            if prefill_batch_count == max_prefill_batch or count_batch_token >= max_batch_tokens:
                 break
 
         for chunk_prompt in info.chunk_prompts:
