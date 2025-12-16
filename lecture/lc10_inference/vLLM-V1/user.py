@@ -1,6 +1,6 @@
 import random
 import torch
-from .config import vLLMEngineConfig
+from config import vLLMEngineConfig
 random.seed(42)
 
 
@@ -15,6 +15,7 @@ def listen_request(config, p=0.01):
             low=1, high=config.vocab_size, size=(1, prompt_len))
         prompt = prompt[0].tolist()
     return prompt, prompt_len
+
 
 def send_request():
     pass

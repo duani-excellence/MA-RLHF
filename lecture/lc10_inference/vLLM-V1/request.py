@@ -1,7 +1,7 @@
 
 from typing import List
 
-from .config import EOS_TOKEN
+from config import EOS_TOKEN
 
 
 class Request:
@@ -15,7 +15,7 @@ class Request:
         self.status = "REQUEST_WAITING"  # WAITING, RUNNING, COMPLETED
         self.current_length = len(prompt)
         self.max_length = max_len
-        self.kv_len = 0
+        self.kv_len = 0  # has prefilled token
 
     def add_token(self, token: int):
         """添加生成的token到请求中"""
@@ -26,9 +26,12 @@ class Request:
             print(
                 f'finished: ID.{self.request_id}, new_len:{len(self.generated_tokens)}')
 
+    def is_decoding(self, ):
+        return bool(len(self.generated_tokens) > 0)
+
     def is_finished(self) -> bool:
         """检查请求是否完成(达到最大长度或生成了EOS)"""
-        result = bool(self.current_length >= self.max_length or (
+        result = bool(len(self.generated_tokens) >= self.max_length or (
             self.generated_tokens and self.generated_tokens[-1] == EOS_TOKEN))
         return result
 

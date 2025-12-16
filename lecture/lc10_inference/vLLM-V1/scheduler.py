@@ -1,27 +1,27 @@
 from queue import deque
 from typing import Dict, List, Set, Tuple, Optional, Any
 
-from .request import Request
+from request import Request
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class SchedulerInfo:
-    ids: List[int] = []
-    chunk_prompts: List[List[int]] = []
+    ids: List[int] = field(default_factory=list)
+    chunk_prompts: List[List[int]] = field(default_factory=list)
 
-    chunk_idx: List[int] = []  # start
-    chunk_len: List[int] = []  # len
+    chunk_idx: List[int] = field(default_factory=list)
+    chunk_len: List[int] = field(default_factory=list)
 
-    merge_prompt: List[int] = []
+    merge_prompt: List[int] = field(default_factory=list)
 
-    kv_len: List[int] = []
-    kv_page_len: List[int] = []
+    kv_len: List[int] = field(default_factory=list)
+    kv_page_len: List[int] = field(default_factory=list)
 
-    is_decoding: List[bool] = []
+    is_decoding: List[bool] = field(default_factory=list)
 
-    last_pos: List[int] = []
+    last_pos: List[int] = field(default_factory=list)
 
     decoding_batch: int = 0
     prefill_batch: int = 0

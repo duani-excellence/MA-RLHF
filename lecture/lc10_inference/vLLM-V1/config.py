@@ -1,7 +1,11 @@
 from dataclasses import dataclass
 
 
-EOS_TOKEN=0
+EOS_TOKEN = 0
+DEFINE_REQUEST_COMPLETED = 'REQUEST_COMPLETED'
+DEFINE_REQUEST_WAITING = 'REQUEST_WAITING'
+DEFINE_REQUEST_RUNNING = 'REQUEST_RUNNING'
+
 
 @dataclass
 class vLLMEngineConfig:
@@ -10,7 +14,7 @@ class vLLMEngineConfig:
     max_prompt_len: int = 16
     max_new_tokens: int = 100
 
-    # model 
+    # model
     num_layers: int = 3
     dim: int = 16
     num_heads: int = 2
@@ -19,12 +23,9 @@ class vLLMEngineConfig:
 
     # PageKV Cache Setting
     page_size: int = 64
-    num_pages: int = 1024
+    num_pages: int = 4096
 
     # chunked-prefill
     max_batch_tokens: int = 2048
     max_decoding_batch: int = 16
     max_prefill_batch: int = 256
-
-
-

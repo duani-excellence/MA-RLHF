@@ -1,36 +1,45 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
+from typing import Union, List
 
-def page_attention_prefill_kernel(Q, K, V, mask=None):
+
+def page_attention_prefill_kernel(Q,
+                                  K: Union[torch.Tensor, List[torch.Tensor]],
+                                  V: Union[torch.Tensor, List[torch.Tensor]],
+                                  mask=None):
     """
-    1 Request(batch_size=1), [Flash Attention-V2](https://zhuanlan.zhihu.com/p/670085985)
-    Args
-        Q: num_pages, num_heads, seq_len, head_dim (in decoding, seq_len=1)
-        K: num_pages, num_heads, seq_len, head_dim
-        V: num_pages, num_heads, seq_len, head_dim
-        mask: num_pages, seq_len, seq_len
-    Output
-        O: num_pages, num_heads, seq_len, head_dim
+    Q: 1, T, H, D
     """
 
-    N, H, T, D = Q.shape  # batch_size, num_heads, seq_len, head_dim
+    Nr, T, H, D = Q.shape  # batch_size, num_heads, seq_len, head_dim
 
-    O_global = torch.zeros(N, H, T, D)
-    for i in range(N):  # Q Loop
-        O = torch.zeros(1, H, T, 1)
-        M = torch.zeros(1, H, T, 1)
-        L = torch.zeros(1, H, T, 1)
-        Q_ = Q[i]
-        for j in range(N):  # KV Loop
+    if isinstance(K, torch.Tensor):
+        K_cache = [K]
+        V_cache = [V]
+    else:
+        """
+        K[0]: num_pages, page_size, H, D
+        K[1]: prompt_len, H, D
+        """
+        K_cache = list(K[0])
+        K_cache.append(K[1])
+        V_cache = list(V[0])
+        V_cache.append(V[1])
 
-            if j > i:
-                continue
-            K_, V_ = K[j], V[j]
+    Nc = len(K_cache)
+    O_global = torch.zeros(Nr, H, T, D)
+    for i in range(Nr):  # Q Loop
+        O = torch.zeros(H, T, D)
+        M = torch.ones(H, T, 1) * -100000.0
+        L = torch.zeros(H, T, 1)
+        Q_ = Q[i].transpose(0, 1)
+
+        for j in range(Nc):  # KV Loop
+            K_ = K_cache[j].transpose(0, 1)
+            V_ = V_cache[j].transpose(0, 1)  # 1, NH, T, DIM
 
             S_ij = Q_ @ K_.transpose(1, 2)  # num_heads, seq_len, seq_len
             # num_heads, seq_len, 1
-            M_ij, _ = torch.max(S_ij, dim=-1, keepdim=True)
+            M_ij, _ = torch.max(S_ij, dim=-1, keepdim=True)  # 4,8,1
             M_new = torch.maximum(M_ij, M)
             P_ij = torch.exp(S_ij - M_new)
             # num_heads, seq_len, 1
@@ -44,6 +53,7 @@ def page_attention_prefill_kernel(Q, K, V, mask=None):
         # re-scaled
         O_global[i] = (O_i / L_new).unsqueeze(dim=0)
 
+    O_global = O_global.transpose(1, 2)  # 1, T, H, D
     return O_global
 
 
@@ -63,3 +73,22 @@ def page_attention_decoding_kernel(O, M, L, O_, M_, L_):
     O_new = torch.sum(O_new, keepdim=True, dim=0)
 
     return O_new
+
+
+if __name__ == '__main__':
+
+    # test 1: prefill
+    # request-level  # num_pages, seq_len, num_heads, head_dim
+    Q = torch.randn(1, 2, 3, 4)
+    K = torch.randn(2, 3, 4)
+    V = torch.randn(2, 3, 4)
+    O = page_attention_prefill_kernel(Q, K, V)
+    print(O.shape)
+
+    # test 2: chunked-prefill
+    Q = torch.randn(1, 2, 3, 4)  # request-level
+    # Cache num_pages, page_size, H, D
+    K = [torch.randn(5, 10, 3, 4), torch.randn(2, 3, 4)]
+    V = [torch.randn(5, 10, 3, 4), torch.randn(2, 3, 4)]
+    O = page_attention_prefill_kernel(Q, K, V)
+    print(O.shape)

@@ -10,9 +10,7 @@ class BlockTable:
         self.page_usage = [0] * num_pages
         self.next_page = [-1] * num_pages
 
-        # self.
-
-    def _allocate_pages(self, num_pages: int, parent_block_id=-1) -> list[int]: 
+    def _allocate_pages(self, num_pages: int, parent_block_id=-1) -> list[int]:
         """分配指定数量的页"""
         if len(self.free_pages) < num_pages:
             return []

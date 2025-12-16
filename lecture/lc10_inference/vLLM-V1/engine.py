@@ -4,10 +4,10 @@ import torch.nn.functional as F
 
 from typing import Dict, List, Set, Tuple, Optional, Any
 
-from .model import PageToyModel
-from .kvcache import PageKVCacheEngine
-from .scheduler import Scheduler, SchedulerInfo
-from .wrapper import ModelWrapper
+from model import PageToyModel
+from kvcache import PageKVCacheEngine
+from scheduler import Scheduler, SchedulerInfo
+from wrapper import ModelWrapper
 
 torch.manual_seed(42)
 
@@ -30,20 +30,54 @@ class vLLMEngine:
         input_ids = torch.tensor([info.merge_prompt], dtype=torch.long)
         return input_ids
 
-    def update(self,):
-        pass
+    def update(self, next_token, KV, info: SchedulerInfo):
+        """
+        next_token request-level,
+        kv: merge-prompt split to update page_kvcache, shape: 2 x L x T x H x d
+        """
 
-    def execute(self, input_ids: torch.Tensor, 
-                kv_cache: List[torch.Tensor], 
-                kv_page_len: List[int],
+        for bid, token in enumerate(next_token):
+            req_id = info.ids[bid]
+            if token != -1:
+                # self.scheduler.requests[req_id].add_token(token)
+                self.scheduler.update_request(req_id, token)
+
+        reqs_KV = KV.split(info.chunk_len, dim=2)
+        for req_id, tmp_KV in zip(info.ids, reqs_KV):
+            if self.scheduler.requests[req_id].status == "REQUEST_COMPLETED":
+                self.cacher.free(req_id)
+            else:
+                new_kv_len = self.cacher.update_kv_cache(req_id, tmp_KV)
+                self.scheduler.requests[req_id].kv_len = new_kv_len
+
+            # self.scheduler.update_request()
+
+    def execute(self, input_ids: torch.Tensor,
+                kv_cache: List[torch.Tensor],
                 info: SchedulerInfo):
         logits, KV = self.model_wrapper.forward(input_ids,
                                                 kv_cache,
                                                 info)
-        
-        next_token = torch.argmax(logits)
 
-        return next_token, KV
+        # 获取 next-token
+        next_token = torch.argmax(logits, dim=-1)
+
+        reqs_next_token = torch.split(next_token,
+                                      info.chunk_len,
+                                      dim=0)
+
+        tokens = []
+        for bid, token_ids in enumerate(reqs_next_token):
+            token = token_ids[-1]
+            if info.is_decoding[bid] == True:
+                tokens.append(token)
+            else:
+                if info.last_pos[bid] != -1:
+                    tokens.append(token)
+                else:
+                    tokens.append(-1)
+
+        return tokens, KV
 
     def step(self):
         """
@@ -60,17 +94,17 @@ class vLLMEngine:
 
         # 获取 batch
         info = self.scheduler.get_requests()
+        print(f'batch_info: P{info.prefill_batch}, D{info.decoding_batch}')
         kv_cache, info.kv_page_len = self.cacher.get_kv_cache(info.ids)
         input_ids, = self.get_merge_batch(info)
 
         # 执行计算
-        next_token = self.execute(input_ids, kv_cache, info)
+        next_token, kv = self.execute(input_ids, kv_cache, info)
 
         # 更新 requests 信息, 更新 KVCache
-        self.update()
+        self.update(next_token, kv, info)
 
-        return 
-
+        return
 
     def has_pending_work(self) -> bool:
         """检查是否还有未完成的工作"""
