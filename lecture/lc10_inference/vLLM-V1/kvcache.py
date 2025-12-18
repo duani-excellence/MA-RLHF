@@ -61,16 +61,19 @@ class PageKVCacheEngine:
         return KVs, num_pages_len
 
     def update_kv_cache(self, request_id, KV):
+        """ 实现逻辑
+        1. 检查 reqeust 对应的 Page-KV-Cache 的空余量
+        2. 如果空余量为 0, 申请 1 个新的页
+        3. 如果空余量不为 0, 将部分 KV 填入到 request 的最后一页
+        """
         _, L, T, H, D = KV.shape
         if request_id not in self.kv_len:
             self.kv_len[request_id] = 0
             page_ids = self.block_table._allocate_pages(num_pages=1)
-            # cur_total_len = self.num_pages*1
             self.request_to_pages[request_id] = page_ids
             self.page_to_request[page_ids[0]] = request_id
         else:
             page_ids = self.request_to_pages[request_id]
-            # cur_total_len = self.num_pages*len(page_ids)
 
         new_len = T
         while new_len != 0:
@@ -80,7 +83,7 @@ class PageKVCacheEngine:
             page_avaliable_len = cur_total_len-tmp_kv_len
 
             if page_avaliable_len == 0:
-                # page-kv 没有空余的空间
+                # page-kv 没有空余的空间, 申请空间
                 if len(page_ids) > 0:
                     parent_page_ids = page_ids[-1]
                 else:
@@ -90,10 +93,6 @@ class PageKVCacheEngine:
                 # if page_id == -1: allocate faild
                 page_avaliable_len = self.page_size
 
-                # 更新页面
-                # if len(page_ids) == 0:
-                #     self.request_to_pages[request_id] = [page_id]
-                # else:
                 self.request_to_pages[request_id].append(page_id)
                 self.page_to_request[page_id] = request_id
 
@@ -121,9 +120,6 @@ class PageKVCacheEngine:
 
     def free(self, request_id: int):
         """释放请求占用的页面"""
-        r2p = self.request_to_pages
-        req_id = request_id
-
         allocate_pages_ids = self.request_to_pages[request_id]
         self.block_table._free_pages(allocate_pages_ids)
 
