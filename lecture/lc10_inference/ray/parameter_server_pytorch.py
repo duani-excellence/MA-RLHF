@@ -29,6 +29,7 @@ class ParameterServer:
         # 初始化模型
         self.model = SimpleMLP()
         self.version = 0
+        # Optimizer 实现在一个独立节点, 其他 worker GPU 可以不维护优化器参数
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.01)
     
     def get_weights(self):
@@ -42,6 +43,9 @@ class ParameterServer:
         # 应用梯度
         for name, param in self.model.named_parameters():
             if name in gradients:
+                """
+                TODO: 梯度需要 reduce
+                """
                 param.grad = gradients[name].to(param.device)
         
         # 执行优化步骤
