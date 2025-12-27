@@ -52,11 +52,11 @@ class Scheduler:
                      max_batch_tokens: int = 8192,
                      max_decoding_batch: int = 0,
                      max_prefill_batch: int = 100,):
-        """"""
+        """获取批量请求, 将 P/D 输入拼接成一串序列, Decoding 请求优先"""
 
         info = SchedulerInfo()
 
-        # 将所有请求至为运行状态
+        # 将所有请求置为运行状态
         for _ in range(len(self.waiting_queue)):
             request_id = self.waiting_queue.popleft()
             request = self.requests[request_id]

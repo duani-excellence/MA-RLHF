@@ -28,6 +28,6 @@
 | `vLLM-V0.ipynb`            | 带 PageKVCache 与 vLLM-PageAttention 实现                    |      |
 | `Chunked-Prefill.ipynb`    | 实现 proj 搭便车和 PD batch 混合计算, 为 vLLM-V1  实现打下基础 | ✅    |
 | `vLLM-V1.ipynb`            | 完成, 实现chunked prefill + PageAttention kernel。 运行命令：`python lecture/lc10_inference/vLLM-V1/server.py` 下可运行完整混合PD批次推理 | ✅    |
-|                            | TODO: PD-Disggreation                                        |      |
+| `PD-Disaggreation.ipynb`   | 1. notebook PD 分离实现；<br/>2. 非 notebook  PD 分离实现；<br/>3. 在代码工程是实现一套基于 `Ray` 的 PD 分离推理系统。 |      |
 |                            | TODO: Speculative Decoding                                   |      |
 
