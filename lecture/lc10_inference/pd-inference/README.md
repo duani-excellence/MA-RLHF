@@ -12,3 +12,7 @@
 
 在有本小节实现基础下, 可以类似 OpenRLHF 和 verl 框架实现训练分离。
 
+
+本节代码参考:
+
+https://github.com/OpenRLHF/OpenRLHF
