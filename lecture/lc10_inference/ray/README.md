@@ -27,6 +27,8 @@
 |                                                         | `ray_pytorch_training_gpu.py`       | 训推分离+GPU部署    |
 | Ray 多节点 LLM-RL 训练任务部署                          | `distributed_llm_system.py`         | 训推节点loop        |
 |                                                         | `distributed_llm_with_real_vllm.py` | 训推+vllm           |
+| Ray + torch.distbuted + Gloo backend                    | `ray_torch_distributed_init.py`     | ray 群组初始化      |
+|                                                         | `ray_torch_distributed_step.py`     | ray 群组持久化运行  |
 
 
 ## 手写 ray debug 版本
