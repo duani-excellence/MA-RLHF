@@ -1,4 +1,7 @@
 # by xiaodongguaAIGC
+# 此代码修改异步收发, 4 种组合, 查看效果
+# `def send_to(...` -> `async def send_to(...`
+# `def receive(...` -> `async def receive(...`
 
 import ray
 import time
@@ -10,7 +13,7 @@ class SenderActor:
     def __init__(self, ):
         self.datas = [1, 2, 3, 4, 5]
     
-    def send_to(self, receiver_actor):
+    async def send_to(self, receiver_actor):
         futures = []
         for i in self.datas:
             future = receiver_actor.receive.remote(i)
@@ -25,7 +28,6 @@ class RecActor:
     def __init__(self, ):
         self.datas = []
     
-    # 异步接收
     async def receive(self, data):
         self.datas.append(data)
         return len(self.datas)
