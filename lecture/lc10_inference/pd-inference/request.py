@@ -21,10 +21,11 @@ class Request:
         """添加生成的token到请求中"""
         self.generated_tokens.append(token)
         self.current_length += 1
-        if self.is_finished():
+        if self.is_len_finished():
             self.status = "REQUEST_COMPLETED"
             print(
                 f'finished: ID.{self.request_id}, new_len:{len(self.generated_tokens)}')
+            
 
     def is_decoding(self, ):
         return bool(len(self.generated_tokens) > 0)
@@ -33,6 +34,11 @@ class Request:
         """检查请求是否完成(达到最大长度或生成了EOS)"""
         result = bool(len(self.generated_tokens) >= self.max_length or (
             self.generated_tokens and self.generated_tokens[-1] == EOS_TOKEN))
+        return result
+
+    def is_len_finished(self) -> bool:
+        """检查请求是否完成(达到最大长度或生成了EOS)"""
+        result = bool(len(self.generated_tokens) >= self.max_length)
         return result
 
     def get_full_sequence(self) -> List[int]:

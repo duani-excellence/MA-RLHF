@@ -5,30 +5,32 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.distributed
 
-
-import os
 import socket
 from typing import Dict, Optional, Type
 
 import ray
-import torch
 from ray.util.placement_group import PlacementGroup, placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 from tqdm import tqdm
 
-from model import ToyModel
 from utils import ray_noset_visible_devices
 
 
 class Actor(nn.Module):
     def __init__(self, config, model_type):
+        super(Actor,self).__init__()
         self.model = model_type(config)
 
     def forward(self, x, kvcaches=None, current_length=None):
+    # def forward(self, ):
         # 改成传参列表 **param
-        logits, kv = self.model(x, kvcaches, current_length)
+        # print(x)
+        # print(*args)
+        # print(**kwargs)
+        logits, kv = self.model(x=x, 
+                                kvcaches=kvcaches, 
+                                current_length=current_length)
         return logits, kv
 
 
@@ -70,6 +72,11 @@ class BaseDistributedActor:
 
 
 class BaseModelActor(BaseDistributedActor):
+    def _setup_distributed(self, strategy):
+        # configure strategy
+        self.strategy = strategy
+        # 增加 torch.distributed 初始化环境
+        # strategy.setup_distributed()    
 
     def init_model_from_pretrained(self, *args, **kwargs):
         raise NotImplementedError()
@@ -139,20 +146,13 @@ class RayActorGroup:
     def _initiate_actors(self, pg, num_gpus_per_actor):
         world_size = self._num_nodes * self._num_gpus_per_node
 
-        # Use placement group to lock resources for models of same type
-        if self._num_gpus_per_node > 1 and pg is None:
-            # bundles = [{"GPU": 1, "CPU": 1} for _ in range(self._num_nodes * self._num_gpus_per_node)]
-            bundles = [{"CPU": 1}
-                       for _ in range(self._num_nodes * self._num_gpus_per_node)]
-            pg = placement_group(bundles, strategy="PACK")
-            ray.get(pg.ready())
-
         master_actor = self.ray_actor_type.options(
             num_cpus=num_gpus_per_actor,
             scheduling_strategy=PlacementGroupSchedulingStrategy(
                 placement_group=pg, placement_group_bundle_index=0
             ),
         ).remote(world_size, 0, None, None)
+        # master_actor = self.ray_actor_type.remote(world_size, 0, None, None)
         self._actor_handlers = [master_actor]
 
         # Create worker_actor

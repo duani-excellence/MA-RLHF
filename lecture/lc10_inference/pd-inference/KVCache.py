@@ -8,7 +8,7 @@ import torch
 import ray
 
 
-@ray.remote()
+@ray.remote
 class DistributedKVCacheEngine:
     def __init__(self, config):
         self.kv_cache_batch = config.kv_cache_batch
@@ -32,28 +32,27 @@ class DistributedKVCacheEngine:
     def get_kv_cache(self, reqs):
         if len(reqs) == 0:
             return None
-
-        batch_id = self.request_to_batch[reqs]
-        kv_cache = self.kv_cache[:, :, batch_id]
+        kv_batch_ids = []
+        for req_id in reqs:
+            kv_batch_ids = self.request_to_batch[req_id]
+        kv_cache = self.kv_cache[:, :, kv_batch_ids]
         return kv_cache
 
     async def update_from_prefill(self, reqs, kv):
         start_ids = len(self.request_to_batch)
         len_ids = len(reqs)
-
         for i in range(len_ids):
             self.request_to_batch[reqs[i]] = start_ids + i
             self.batch_to_request[reqs[i]] = i + start_ids
 
-        self.kv_cache[:, : start_ids, start_ids+len_ids] = kv
+        self.kv_cache[:, :, start_ids: start_ids+len_ids] = kv
 
     def update_from_decoding(self, reqs, kv, decoding_idx):
-        len_ids = len(reqs)
-        for i in range(len_ids):
-            req_id = reqs[i]
+        # len_ids = len(reqs)
+        for i, req_id in enumerate(reqs):
             pos = decoding_idx[i]
             batch_id = self.request_to_batch[req_id]
-            self.kv_cache[:, : req_id, pos] = kv[:, :, batch_id, pos]
+            self.kv_cache[:, :, batch_id, pos] = kv[:, :, i, 0] # 2,3,1,1,2,8
 
     def free(self, reqs):
         for req_id in reqs:

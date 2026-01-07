@@ -34,14 +34,15 @@
 ## 手写 ray debug 版本
 
 
-| 功能                                                    | 代码文件                   | 备注                             |
-| ------------------------------------------------------- | -------------------------- | -------------------------------- |
-| Ray 通信组件                                            | `actor_communication_1.py` | 发收同步                         |
-|                                                         | `actor_communication_2.py` | 收异步                           |
-|                                                         | `actor_communication_2.py` | 收发异步                         |
-| Ray 维护共享队列（Cache），实现两个进程能够流式处理任务 | `shared_queue_1.py`        | 通过一个可访问的共享队列实现通信 |
-| Ray 远程函数                                            | `remote_function.py`       | 不同设备数据处理, 手动to         |
-|                                                         | `remote_function_1.py`     | 不同设备数据处理, gpu            |
-| Ray tensor 传输                                         | `tensor_transfer_1.py`     | 数据存储在共享内存中，使用零拷贝 |
-| Ray 分布式操作                                          | `ray_all_reduce_mean.py`   | 实现规约操作                     |
+| 功能                                                    | 代码文件                   | 备注                                      |
+| ------------------------------------------------------- | -------------------------- | ----------------------------------------- |
+| Ray 通信组件                                            | `actor_communication_1.py` | 发收同步                                  |
+|                                                         | `actor_communication_2.py` | 收异步                                    |
+|                                                         | `actor_communication_2.py` | 收发异步                                  |
+| Ray 同步异步                                            | `async_comm.py`            | 辨别 `_.remote()` 和 `ray.get(_.remote()) |
+| Ray 维护共享队列（Cache），实现两个进程能够流式处理任务 | `shared_queue_1.py`        | 通过一个可访问的共享队列实现通信          |
+| Ray 远程函数                                            | `remote_function.py`       | 不同设备数据处理, 手动to                  |
+|                                                         | `remote_function_1.py`     | 不同设备数据处理, gpu                     |
+| Ray tensor 传输                                         | `tensor_transfer_1.py`     | 数据存储在共享内存中，使用零拷贝          |
+| Ray 分布式操作                                          | `ray_all_reduce_mean.py`   | 实现规约操作                              |
 

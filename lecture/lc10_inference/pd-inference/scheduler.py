@@ -25,7 +25,7 @@ class SchedulerInfo:
     prefill_batch: int = 0
 
 
-@ray.remote()
+@ray.remote
 class Scheduler:
     """管理所有请求的调度和状态"""
 
@@ -34,8 +34,22 @@ class Scheduler:
         self.requests = {}  # request_id -> Request
         self.waiting_queue = deque()
         self.running_requests = set()
+        self.is_running_prefill = True
+        self.is_running_decoding = True
+    
+    async def get_scheduler_status(self,):
+        return self.is_running_prefill, self.is_running_decoding
+    
+    def set_stop_prefill(self):
+        self.is_running_prefill = False
+        
+    def set_stop_decoding(self):
+        self.is_running_decoding = False
+        
 
-    async def add_request(self, prompt: List[int], max_seq_len: int) -> int:
+    async def add_request(self, 
+                          prompt: List[int], 
+                          max_seq_len: int, ) -> int:
         """添加新请求,返回请求ID"""
         request_id = len(self.requests)
         request = Request(request_id, prompt, max_seq_len)
@@ -72,11 +86,13 @@ class Scheduler:
 
         for request_id in self.running_requests:
             # request_id = self.waiting_queue.popleft()
-            prompt = self.requests[request_id].generated_tokens[-1]
+            prompt = [self.requests[request_id].generated_tokens[-1]]
             info.prompts.append(prompt)
             info.ids.append(request_id)
             info.last_pos.append(
-                len(prompt)+len(self.requests[request_id].generated_tokens))
+                len(self.requests[request_id].prompt) +
+                len(self.requests[request_id].generated_tokens)
+            )
             info.decoding_batch += 1
         return info
 
@@ -89,18 +105,19 @@ class Scheduler:
             if request_id not in self.running_requests:
                 self.running_requests.add(request_id)
 
-            if request.is_finished():
+            # if request.is_finished():
+            if request.is_len_finished():
                 self.running_requests.discard(request_id)
 
     def has_pending_requests(self) -> bool:
         """检查是否有未完成的请求"""
         return len(self.waiting_queue) > 0 or len(self.running_requests) > 0
 
-    def get_num_pending_requests(self) -> int:
-        return len(self.waiting_queue)
+    def get_num_pending_requests(self) :
+        return len(self.waiting_queue), self.is_running_prefill
 
-    def get_num_running_requests(self) -> int:
-        return len(self.running_requests)
+    def get_num_running_requests(self) :
+        return len(self.running_requests), self.is_running_decoding
 
     def get_running_request_ids(self) -> List[int]:
         """获取当前正在运行的请求ID"""

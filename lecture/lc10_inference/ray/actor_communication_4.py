@@ -7,10 +7,10 @@ ray.init()
 
 @ray.remote
 class SenderActor:
-    def __init__(self, ):
-        self.datas = [1, 2, 3, 4, 5]
+    def __init__(self, datas):
+        self.datas = datas
     
-    def send_to(self, receiver_actor):
+    async def send_to(self, receiver_actor):
         # 改写, 批量异步发送, 返回handle, 不管接收方是否收到
         futures = []
         for i in self.datas:
@@ -26,23 +26,28 @@ class RecActor:
     def __init__(self, ):
         self.datas = []
     
-    # 异步接收
-    async def receive(self, data):
+    # 同步接收
+    # async def receive(self, data):
+    def receive(self, data):
         self.datas.append(data)
         return len(self.datas)
 
     def get_datas(self,):
         return self.datas
         
-print('---异步接收通信---')
-send_actor = SenderActor.remote()
+send_actor_1 = SenderActor.remote(list(range(1,5)))
+send_actor_2 = SenderActor.remote(list(range(15,20)))
 rec_actor = RecActor.remote()
 
-futures = ray.get(send_actor.send_to.remote(rec_actor))
-result = ray.get(futures) # 类似 barrier, 阻塞保证接收方完成所有数据接收
-print('receive actor len:', result)
+print('---2actor 异步发送---')
+futures_1 = ray.get(send_actor_1.send_to.remote(rec_actor))
+futures_2 = ray.get(send_actor_2.send_to.remote(rec_actor))
 
-# 打印接收的顺序
+result = ray.get(futures_2+futures_1)  # 有顺序性
+print('2 send actor to recv actor, datalen:', result)
+result = ray.get(futures_1+futures_2)  # 有顺序性
+print('2 send actor to recv actor, datalen:', result)
+
+# 接收的顺序
 result = ray.get(rec_actor.get_datas.remote())
 print('receive actor datas:', result)
-

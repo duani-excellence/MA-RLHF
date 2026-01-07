@@ -11,6 +11,7 @@ class SenderActor:
         self.datas = [12, 32, 4, 8 , 10]
     
     def send_to(self, receiver_actor, data):
+        # 返回的是一个句柄
         return receiver_actor.receive.remote(data)
     
     def get_datas(self,):

@@ -1,3 +1,4 @@
+import os
 
 def ray_noset_visible_devices(env_vars=os.environ):
     # Refer to

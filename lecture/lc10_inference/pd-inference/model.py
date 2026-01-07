@@ -27,19 +27,13 @@ class DecoderBlock(nn.Module):
         if kvcache is None:
             K_, V_ = K, V
         else:
-            K_cache = kvcache[0]
-            V_cache = kvcache[1]
-
-            # # left padding 拼接方式
-            # K_ = torch.cat((K_cache, K), dim = 1)
-            # V_ = torch.cat((V_cache, V), dim = 1)
-
-            # right padding 填充方式
-            cache_col = torch.zeros(bsz, 1, self.num_heads, self.head_dim)
-            K_ = torch.cat((K_cache, cache_col.clone()), dim=1)
-            V_ = torch.cat((V_cache, cache_col.clone()), dim=1)
-            K_[:, current_length, :, :] = K
-            V_[:, current_length, :, :] = V
+            # Note: Ignore KV-cat
+            K_ = kvcache[0]
+            V_ = kvcache[1]
+            if len(K_.shape) == 3:
+                K_ = K_.unsqueeze(dim=0)
+                V_ = V_.unsqueeze(dim=0)
+            
 
         K_ = K_.transpose(1, 2)
         V_ = V_.transpose(1, 2)
@@ -53,7 +47,7 @@ class DecoderBlock(nn.Module):
         # activate & shorcut
         O_ = X + self.act(O)
 
-        return O_, (K, V)
+        return O_, torch.stack( [K, V], dim = 0)
 
 
 class ToyModel(nn.Module):
@@ -73,11 +67,11 @@ class ToyModel(nn.Module):
             if kvcaches == None:
                 X, layer_kvcache = block(X, None, None)
             else:
+                # kvcaches[0][i]-> bsz, seq_len, heads, dim
                 X, layer_kvcache = block(X,
-                                         kvcache=[kvcaches[0][i],
+                                         kvcache=[kvcaches[0][i], 
                                                   kvcaches[1][i]],
                                          current_length=current_length)
-
             layer_kvcaches.append(layer_kvcache)
         logits = self.lm_head(X)
-        return logits, layer_kvcaches
+        return logits, torch.stack(layer_kvcaches, dim = 1)

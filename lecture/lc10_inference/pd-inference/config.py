@@ -13,7 +13,10 @@ class PDInferenceEngineConfig:
     max_seq_len = 32
     max_prompt_len: int = 64
     max_new_tokens: int = 32
-    max_prompts: int = 200
+    max_prompts: int = 32
+    
+    # actor
+    actor_group_gpu: int = 1
 
     # model
     num_layers: int = 3
