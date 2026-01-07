@@ -1,17 +1,13 @@
 本代码实现目的
 
-1. 掌握 PD 分离基础实现
-   - 节点初始化可指定设备（以 CPU 实现调试为主，可选实现 GPU）
-   - 单 P 节点和单 D 节点
-   - 异步 KVCache 传输，而 D 节点主要负责 cache 的管理
-2. 掌握 Ray 实现复杂推理系统，实现feature有：
-    - 单 P 节点和多 D worker
-    - KVCache 可以中心化，如用 NVme 设备进行 offload 存储，decoding需要时，异步拉取，更加 pratical
+1. 实现分布式 PD 节点 和无限循环 step
+2. 实现共享 scheduler, kvcache
+3. 主函数实现 P节点、D节点、发送节点的持久化运行
+4. PD 节点使用 ray 封装, 实现单控制器处理逻辑
   
 进一步：
 
-在有本小节实现基础下, 可以类似 OpenRLHF 和 verl 框架实现训练分离。
-
+在有本小节实现基础下, 可以类似 OpenRLHF 和 verl 框架实现 GRPO-RL 训练分离。
 
 本节代码参考:
 
