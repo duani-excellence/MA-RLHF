@@ -73,6 +73,7 @@ class BaseDistributedActor:
 
 class BaseModelActor(BaseDistributedActor):
     def _setup_distributed(self, strategy):
+        # TODO: 对于群组进行初始化
         # configure strategy
         self.strategy = strategy
         # 增加 torch.distributed 初始化环境
@@ -85,6 +86,7 @@ class BaseModelActor(BaseDistributedActor):
         torch.cuda.empty_cache()
         torch.cuda.synchronize()
 
+    # 数据并行
     def execute_batch(self, method_name: str, all_data, start_idx, end_idx):
         """Process input data by calling specified function for each item in the lists.
 
