@@ -36,7 +36,8 @@
 | ------------------------------------------------------- | ------------------------------- | ------------------------------------------ |
 | Ray 通信组件                                            | `actor_communication_1.py`      | 发收同步                                   |
 |                                                         | `actor_communication_2.py`      | 收异步                                     |
-|                                                         | `actor_communication_2.py`      | 收发异步                                   |
+|                                                         | `actor_communication_3.py`      | 收发异步                                   |
+|                                                         | `actor_communication_4.py`      | 2发送节点, 1接收节点                       |
 | Ray 同步异步                                            | `async_comm.py`                 | 辨别 `_.remote()` 和 `ray.get(_.remote())` |
 | Ray 维护共享队列（Cache），实现两个进程能够流式处理任务 | `shared_queue_1.py`             | 通过一个可访问的共享队列实现通信           |
 | Ray 远程函数                                            | `remote_function.py`            | 不同设备数据处理, 手动to                   |
