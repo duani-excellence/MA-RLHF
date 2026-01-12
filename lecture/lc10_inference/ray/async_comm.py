@@ -34,7 +34,6 @@ print('-'*20, 'example 1: 同步执行任务', '-'*20)
 result_mul = ray.get(fun_mul.remote(A,B)) # 同步执行任务
 print('>>> Return mul shape: ', result_mul.shape)
 
-# `fun_add` 运行过程中, 可见 `fun_mul` 也在打印
 result_add = ray.get(fun_add.remote(A,B)) # 同步执行任务
 print('>>> Return add shape: ', result_add.shape)
 
