@@ -41,6 +41,7 @@ def get_lora_config():
     return peft_config
 
 def get_dataset_alpaca():
+    """封装 TRL SFT 数据格式, 用 messages 组织"""
     dataset = load_dataset('tatsu-lab/alpaca')
     def map_cat_inst_input(example):
         example['messages'] = [
