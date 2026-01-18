@@ -4,13 +4,23 @@
 set -x
 
 export USE_FLASH_ATTENTION_2="FALSE"
+# export NVTE_DISABLE=1
 
-python3 -m verl.trainer.main_ppo \
+
+
+# ppo_megatron_trainer
+
+
+# python3 -m verl.trainer.main_ppo --config-path=config \
+#     --config-name='ppo_megatron_trainer.yaml'\
+
+python3 -m verl.trainer.main_ppo --config-path=config \
+    --config-name='ppo_megatron_trainer.yaml' \
     actor_rollout_ref.rollout.enforce_eager=True \
     algorithm.adv_estimator=grpo \
     data.train_files=./gsm8k/train.parquet \
     data.val_files=./gsm8k/test.parquet \
-    data.train_batch_size=32 \
+    data.train_batch_size=512 \
     data.max_prompt_length=128 \
     data.max_response_length=256 \
     data.filter_overlong_prompts=True \
@@ -24,9 +34,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.entropy_coeff=0 \
-    actor_rollout_ref.model.enable_gradient_checkpointing=True \
-    actor_rollout_ref.actor.fsdp_config.param_offload=False \
-    actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
+    ++actor_rollout_ref.model.enable_gradient_checkpointing=True \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     actor_rollout_ref.rollout.name=vllm \
@@ -34,12 +42,16 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.n=2 \
     actor_rollout_ref.rollout.mode=async \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=8 \
-    actor_rollout_ref.ref.fsdp_config.param_offload=True \
+    actor_rollout_ref.rollout.load_format=auto \
+    actor_rollout_ref.actor.strategy="megatron" \
+    actor_rollout_ref.actor.megatron.tensor_model_parallel_size=1 \
+    actor_rollout_ref.actor.megatron.pipeline_model_parallel_size=2 \
+    actor_rollout_ref.actor.megatron.context_parallel_size=1 \
     algorithm.use_kl_in_reward=False \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
     trainer.project_name='verl_grpo_example_gsm8k' \
-    trainer.experiment_name='qwen3_8b_function_rm' \
+    trainer.experiment_name='qwen3_0dot6B_function_rm_megatron' \
     trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \
     trainer.save_freq=20 \
