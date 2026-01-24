@@ -1,6 +1,3 @@
-# Tested successfully on the hiyouga/verl:ngc-th2.6.0-cu126-vllm0.8.4-flashinfer0.2.2-cxx11abi0 image.
-# It outperforms the Qwen2 7B base model by two percentage points on the test set of GSM8K.
-
 set -x
 
 export USE_FLASH_ATTENTION_2="FALSE"
