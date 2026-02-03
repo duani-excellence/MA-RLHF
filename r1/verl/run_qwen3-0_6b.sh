@@ -1,6 +1,6 @@
 # FrameWork: verl + sglang + megatron
-# ENV: 4090(48GB)x4 ~2h / 1 epochs
-# TP: 4
+# ENV: 3090(24GB)x2 ~2h / 1 epochs
+# TP: 2
 # Data: xr1-750
 # Result: 57.23%(test set)
 
