@@ -334,6 +334,8 @@ class TaskRunner:
         from verl.utils.dataset.rl_dataset import collate_fn
 
         # Create training and validation datasets.
+        print('-'*100)
+        print('train_dataset, start')
         train_dataset = create_rl_dataset(
             config.data.train_files,
             config.data,
@@ -350,7 +352,11 @@ class TaskRunner:
             is_train=False,
             max_samples=config.data.get("val_max_samples", -1),
         )
+        print('train_dataset, end')
+        print('-'*100)
         train_sampler = create_rl_sampler(config.data, train_dataset)
+        print('create_rl_sampler, end')
+        print('-'*100)
 
         # Initialize the PPO trainer.
         trainer = RayPPOTrainer(
@@ -367,11 +373,17 @@ class TaskRunner:
             collate_fn=collate_fn,
             train_sampler=train_sampler,
         )
+        print('RayPPOTrainer, end')
+        print('-'*100)
         # Initialize the workers of the trainer.
         trainer.init_workers()
+        print('init_workers, end')
+        print('-'*100)
 
         # Start the training process.
         trainer.fit()
+        print('fit, end')
+        print('-'*100)
 
 
 def create_rl_dataset(data_paths, data_config, tokenizer, processor, is_train=True, max_samples: int = -1):
