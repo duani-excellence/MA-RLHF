@@ -122,7 +122,8 @@ class Attention(nn.Module):
             Q, K, V, self.kv_rank_src, self.gqa_groups[self.cur_group])
 
         O = RowFunction.apply(Z, self.WO.w.weight.t())
-        # dist.all_reduce(O, dist.ReduceOp.SUM)
+        # row tp 自带 all-reduce 结果
+        
         return O
 
 
