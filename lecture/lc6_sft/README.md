@@ -20,6 +20,7 @@
 | `Supervised_Finetuning_PyTorch.ipynb`       | 基于Pytroch，调用现成模型，手动写训练函数，微调后模型成功。遵循对话模版，能够理解提示词并生成出合理的结果 | ✅ |
 | `Supervised_FineTuning_transformers_Qwen3.ipynb`       | 基于Transformers库，调用dataset库预处理数据；实现SFT手动版本、Trainer版本、以及trl::SFTTrainer 版本 | ✅🌟 |
 | `LoRA.ipynb`       | LoRA 原理推导，低秩矩阵究竟在 fitting 什么目标，LoRA 值的深究的点在于为什么rank能做到那么低？初始化策略是什么？LoRA如何推导梯度？在实操过程中需要对比LoRA微调和全参微调之间的差别。 | ✅ |
+| `QLoRA.ipynb` | 从实现角度解析, 如何量化(bitsandbytes)模型, 前向时去量化. |  |
 | `Prompt_Enginerring.ipynb`       | TODO |      |
 | `RAG.ipynb`       | TODO |      |
 | `Embedding.ipynb`       | TODO |      |
@@ -35,11 +36,12 @@
 
 微调基于 Qwen3 预训练模型, Alpaca 数据集
 
-2. SFT Dataset: `Supervised_Finetuning_Dataset.ipynb`
-3. full finetuning PyTorch: `Supervised_Finetuning_PyTorch.ipynb`
-4. full finetuning Huggingface: `Supervised_FineTuning_transformers_Qwen3.ipynb`
-5. LoRA finetune
-6. QLoRA finetune
+1. SFT Dataset: `Supervised_Finetuning_Dataset.ipynb`
+
+2. full finetuning PyTorch: `Supervised_Finetuning_PyTorch.ipynb`
+3. full finetuning Huggingface: `Supervised_FineTuning_transformers_Qwen3.ipynb`
+4. LoRA finetune
+5. QLoRA finetune
 
 ## 提示词工程
 
@@ -57,3 +59,9 @@
 
 12. benchmark evaluation
 13. llm as a judge
+
+## 待定
+
+14. Vibe Coding
+15. mcp
+16. skills
