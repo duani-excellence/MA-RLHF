@@ -1,0 +1,16 @@
+torch==2.8.0
+dataset
+tqdm
+transformers
+accelerate
+peft
+tyro
+bitsandbytes
+sentencepiece
+scipy
+trl
+deepspeed
+evaluate
+scikit-learn
+wandb
+panda
