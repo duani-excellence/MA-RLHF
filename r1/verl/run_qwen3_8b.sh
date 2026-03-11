@@ -22,6 +22,7 @@ python3 -m verl.trainer.main_ppo --config-path=config \
     data.train_files='./xr1-750/train.parquet' \
     data.val_files='./xr1-750/test.parquet' \
     data.train_batch_size=${NBATCHS} \
+    data.val_batch_size=${NBATCHS} \
     data.max_prompt_length=256 \
     data.max_response_length=1024 \
     data.filter_overlong_prompts=True \

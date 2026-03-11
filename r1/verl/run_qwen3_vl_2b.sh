@@ -25,6 +25,7 @@ python3 -m verl.trainer.main_ppo --config-path=config \
     data.train_files="$train_path" \
     data.val_files="$test_path" \
     data.train_batch_size=$GEN_BATCH \
+    data.val_batch_size=$GEN_BATCH \
     data.max_prompt_length=1024 \
     data.max_response_length=512 \
     data.filter_overlong_prompts=True \
