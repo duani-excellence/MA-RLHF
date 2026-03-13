@@ -13,7 +13,7 @@ N_TP=1
 N_PP=1
 N_VPP="null"
 N_CP=1
-N_EP=2
+N_EP=$NGPUS
 N_DP=1
 N_ETP=1
 
