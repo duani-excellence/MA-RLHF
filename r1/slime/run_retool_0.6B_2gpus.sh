@@ -42,7 +42,7 @@ CKPT_ARGS=(
    --ref-load  /data/Qwen3-0.6B-dist
    --save /root/Qwen3-4B_retool/
    --save-interval 100
-   --rotary-base 5000000
+   --rotary-base 1000000
 )
 
 
