@@ -46,8 +46,8 @@ CKPT_ARGS=(
    --hf-checkpoint /data/Qwen3-4B
    #--hf-checkpoint /root/Qwen3-4B-FP8
    --ref-load  /data/Qwen3-4B-dist
-   --load /root/Qwen3-4B_slime/
-   --save /root/Qwen3-4B_slime/
+   --load /data/Qwen3-4B_slime/
+   --save /data/Qwen3-4B_slime/
    --save-interval 100
 )
 
@@ -93,7 +93,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 4096
+   --max-tokens-per-gpu 5000
 )
 
 # Sglang: TP=2

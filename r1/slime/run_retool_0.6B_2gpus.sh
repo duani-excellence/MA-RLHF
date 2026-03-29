@@ -40,9 +40,8 @@ source "/root/Projects/slime/scripts/models/qwen3-0.6B.sh"
 CKPT_ARGS=(
     --hf-checkpoint /data/Qwen3-0.6B
    --ref-load  /data/Qwen3-0.6B-dist
-   --save /root/Qwen3-4B_retool/
+   --save /data/Qwen3-4B_retool/
    --save-interval 100
-   --rotary-base 1000000
 )
 
 
@@ -86,7 +85,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 4096
+   --max-tokens-per-gpu 5000
 )
 
 
