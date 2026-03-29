@@ -40,7 +40,7 @@ source "/root/Projects/slime/scripts/models/qwen3-0.6B.sh"
 CKPT_ARGS=(
     --hf-checkpoint /data/Qwen3-0.6B
    --ref-load  /data/Qwen3-0.6B-dist
-   --save /data/Qwen3-4B_retool/
+   --save /data/Qwen3-0.6B_retool/
    --save-interval 100
 )
 
@@ -53,12 +53,12 @@ ROLLOUT_ARGS=(
    --rollout-shuffle
    --reward-key score
    --num-rollout 3000
-   --rollout-batch-size 4
-   --n-samples-per-prompt 4
+   --rollout-batch-size 32
+   --n-samples-per-prompt 8
    --rollout-max-response-len 4096
    --rollout-temperature 1
 
-   --global-batch-size 16
+   --global-batch-size 64
    --balance-data
 )
 
@@ -85,7 +85,7 @@ PERF_ARGS=(
 
    # --micro-batch-size 1
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 5000
+   --max-tokens-per-gpu 8192
 )
 
 
@@ -167,7 +167,5 @@ ray job submit --address="http://127.0.0.1:8265" \
    ${PERF_ARGS[@]} \
    ${SGLANG_ARGS[@]} \
    ${MISC_ARGS[@]} \
-   ${CUSTOM_ARGS[@]}
-
-
-#    ${EVAL_ARGS[@]} \
+   ${CUSTOM_ARGS[@]} \
+   ${EVAL_ARGS[@]} 

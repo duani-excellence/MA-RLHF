@@ -4,6 +4,7 @@
 # cd ~/Projects/slime
 # bash ./run_retool_4B_4gpus.sh
 
+
 # for rerun the task
 pkill -9 sglang
 sleep 3
@@ -38,10 +39,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "/root/Projects/slime/scripts/models/qwen3-4B.sh"
 
 CKPT_ARGS=(
-    --hf-checkpoint /data/Qwen3-4B
-   --ref-load  /data/Qwen3-4B-dist
+    --hf-checkpoint /data/Qwen3-4B-sft
+   --ref-load  /data/Qwen3-4B-sft-dist
    --save /data/Qwen3-4B_retool/
    --save-interval 100
+   --rotary-base 5000000
 )
 
 
@@ -53,7 +55,7 @@ ROLLOUT_ARGS=(
    --rollout-shuffle
    --reward-key score
    --num-rollout 3000
-   --rollout-batch-size 4
+   --rollout-batch-size 16
    --n-samples-per-prompt 4
    --rollout-max-response-len 4096
    --rollout-temperature 1
@@ -167,7 +169,5 @@ ray job submit --address="http://127.0.0.1:8265" \
    ${PERF_ARGS[@]} \
    ${SGLANG_ARGS[@]} \
    ${MISC_ARGS[@]} \
-   ${CUSTOM_ARGS[@]}
-
-
-#    ${EVAL_ARGS[@]} \
+   ${CUSTOM_ARGS[@]} \
+   ${EVAL_ARGS[@]} 
